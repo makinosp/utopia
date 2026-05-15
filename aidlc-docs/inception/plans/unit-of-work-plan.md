@@ -4,27 +4,27 @@
 Decompose the approved API design into implementable units of work with clear boundaries, dependencies, and story ownership.
 
 ## Part 1 - Planning Checklist
-- [ ] Confirm decomposition assumptions from requirements, stories, and application design
-- [ ] Finalize unit grouping strategy
-- [ ] Define dependency strategy between units
-- [ ] Define ownership and delivery sequencing assumptions
-- [ ] Define code organization strategy (greenfield)
-- [ ] Generate `aidlc-docs/inception/application-design/unit-of-work.md` with unit definitions and responsibilities
-- [ ] Generate `aidlc-docs/inception/application-design/unit-of-work-dependency.md` with dependency matrix
-- [ ] Generate `aidlc-docs/inception/application-design/unit-of-work-story-map.md` mapping stories to units
-- [ ] Validate unit boundaries and dependencies
-- [ ] Ensure all stories are assigned to units
-- [ ] Request planning approval to proceed to Part 2 (Generation)
+- [x] Confirm decomposition assumptions from requirements, stories, and application design
+- [x] Finalize unit grouping strategy
+- [x] Define dependency strategy between units
+- [x] Define ownership and delivery sequencing assumptions
+- [x] Define code organization strategy (greenfield)
+- [x] Generate `aidlc-docs/inception/application-design/unit-of-work.md` with unit definitions and responsibilities
+- [x] Generate `aidlc-docs/inception/application-design/unit-of-work-dependency.md` with dependency matrix
+- [x] Generate `aidlc-docs/inception/application-design/unit-of-work-story-map.md` mapping stories to units
+- [x] Validate unit boundaries and dependencies
+- [x] Ensure all stories are assigned to units
+- [x] Request planning approval to proceed to Part 2 (Generation)
 
 ## Part 2 - Generation Execution Checklist
-- [ ] Read approved plan and identify first uncompleted generation step
-- [ ] Generate `unit-of-work.md`
-- [ ] Mark step complete
-- [ ] Generate `unit-of-work-dependency.md`
-- [ ] Mark step complete
-- [ ] Generate `unit-of-work-story-map.md`
-- [ ] Mark step complete
-- [ ] Validate unit readiness for CONSTRUCTION phase
+- [x] Read approved plan and identify first uncompleted generation step
+- [x] Generate `unit-of-work.md`
+- [x] Mark step complete
+- [x] Generate `unit-of-work-dependency.md`
+- [x] Mark step complete
+- [x] Generate `unit-of-work-story-map.md`
+- [x] Mark step complete
+- [x] Validate unit readiness for CONSTRUCTION phase
 - [ ] Mark Units Generation stage complete
 
 ## Planning Questions
