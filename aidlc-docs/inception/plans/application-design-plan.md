@@ -4,18 +4,18 @@
 Define high-level application architecture for a Rust-based household finance API with partial Firefly-III compatibility.
 
 ## Plan Checklist
-- [ ] Confirm design assumptions from requirements and stories
-- [ ] Finalize component boundaries
-- [ ] Define component interfaces and method signatures
-- [ ] Define service layer and orchestration rules
-- [ ] Define component dependency and communication patterns
-- [ ] Generate `aidlc-docs/inception/application-design/components.md`
-- [ ] Generate `aidlc-docs/inception/application-design/component-methods.md`
-- [ ] Generate `aidlc-docs/inception/application-design/services.md`
-- [ ] Generate `aidlc-docs/inception/application-design/component-dependency.md`
-- [ ] Generate `aidlc-docs/inception/application-design/application-design.md`
-- [ ] Validate design completeness and consistency
-- [ ] Prepare review summary for approval gate
+- [x] Confirm design assumptions from requirements and stories
+- [x] Finalize component boundaries
+- [x] Define component interfaces and method signatures
+- [x] Define service layer and orchestration rules
+- [x] Define component dependency and communication patterns
+- [x] Generate `aidlc-docs/inception/application-design/components.md`
+- [x] Generate `aidlc-docs/inception/application-design/component-methods.md`
+- [x] Generate `aidlc-docs/inception/application-design/services.md`
+- [x] Generate `aidlc-docs/inception/application-design/component-dependency.md`
+- [x] Generate `aidlc-docs/inception/application-design/application-design.md`
+- [x] Validate design completeness and consistency
+- [x] Prepare review summary for approval gate
 
 ## Design Questions
 
