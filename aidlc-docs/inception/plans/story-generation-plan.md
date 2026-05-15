@@ -8,11 +8,11 @@
 - [x] Finalize persona scope and user segments
 - [x] Finalize story granularity and story template
 - [x] Finalize acceptance criteria format and validation style
-- [ ] Generate `aidlc-docs/inception/user-stories/personas.md`
-- [ ] Generate `aidlc-docs/inception/user-stories/stories.md`
-- [ ] Verify INVEST compliance across all generated stories
-- [ ] Map personas to stories and verify coverage
-- [ ] Prepare user stories review summary for approval gate
+- [x] Generate `aidlc-docs/inception/user-stories/personas.md`
+- [x] Generate `aidlc-docs/inception/user-stories/stories.md`
+- [x] Verify INVEST compliance across all generated stories
+- [x] Map personas to stories and verify coverage
+- [x] Prepare user stories review summary for approval gate
 
 ## Story Breakdown Approaches
 1. User Journey-Based
