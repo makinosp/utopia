@@ -3,7 +3,7 @@
 ## Project Information
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-14T00:00:00Z
-- **Current Stage**: INCEPTION - User Stories (Approval Gate)
+- **Current Stage**: INCEPTION - Application Design
 
 ## Workspace State
 - **Existing Code**: No
@@ -24,5 +24,18 @@
 ## Stage Progress
 - [x] Workspace Detection — COMPLETED
 - [x] Requirements Analysis — COMPLETED
-- [ ] User Stories — PENDING APPROVAL
-- [ ] Workflow Planning — PENDING
+- [x] User Stories — COMPLETED
+- [x] Workflow Planning — COMPLETED
+- [ ] Application Design — IN PROGRESS (EXECUTE)
+- [ ] Units Generation — PENDING (EXECUTE)
+
+### 🟢 CONSTRUCTION PHASE (per-unit loop)
+- [ ] Functional Design — PENDING (EXECUTE)
+- [ ] NFR Requirements — PENDING (EXECUTE)
+- [ ] NFR Design — PENDING (EXECUTE)
+- [ ] Infrastructure Design — PENDING (EXECUTE)
+- [ ] Code Generation — PENDING (EXECUTE - ALWAYS)
+- [ ] Build and Test — PENDING (EXECUTE - ALWAYS)
+
+### 🟡 OPERATIONS PHASE
+- [ ] Operations — PLACEHOLDER
