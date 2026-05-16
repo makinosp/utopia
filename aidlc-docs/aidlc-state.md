@@ -3,7 +3,7 @@
 ## Project Information
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-14T00:00:00Z
-- **Current Stage**: CONSTRUCTION - NFR Design (UOW-01 Core Foundation, Awaiting Approval)
+- **Current Stage**: CONSTRUCTION - Infrastructure Design (UOW-01 Core Foundation)
 
 ## Workspace State
 - **Existing Code**: No
@@ -32,8 +32,8 @@
 ### 🟢 CONSTRUCTION PHASE (per-unit loop)
 - [x] Functional Design — COMPLETED (UOW-01 Core Foundation)
 - [x] NFR Requirements — COMPLETED (UOW-01 Core Foundation)
-- [ ] NFR Design — IN PROGRESS (EXECUTE)
-- [ ] Infrastructure Design — PENDING (EXECUTE)
+- [x] NFR Design — COMPLETED (UOW-01 Core Foundation)
+- [ ] Infrastructure Design — IN PROGRESS (EXECUTE)
 - [ ] Code Generation — PENDING (EXECUTE - ALWAYS)
 - [ ] Build and Test — PENDING (EXECUTE - ALWAYS)
 
