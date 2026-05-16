@@ -15,16 +15,16 @@ Map the Core Foundation logical components to practical self-hosted infrastructu
   - aidlc-docs/construction/core-foundation/nfr-requirements/nfr-requirements.md
 
 ## Infrastructure Design Checklist
-- [ ] Define deployment environment and runtime topology
-- [ ] Define compute infrastructure mapping for auth and API middleware path
-- [ ] Define storage infrastructure and persistence topology
-- [ ] Define messaging/async processing strategy (if needed)
-- [ ] Define networking and ingress architecture
-- [ ] Define monitoring and logging infrastructure stack
-- [ ] Define shared infrastructure boundaries and isolation strategy
-- [ ] Generate infrastructure-design.md
-- [ ] Generate deployment-architecture.md
-- [ ] Request approval to proceed to Code Generation
+- [x] Define deployment environment and runtime topology
+- [x] Define compute infrastructure mapping for auth and API middleware path
+- [x] Define storage infrastructure and persistence topology
+- [x] Define messaging/async processing strategy (if needed)
+- [x] Define networking and ingress architecture
+- [x] Define monitoring and logging infrastructure stack
+- [x] Define shared infrastructure boundaries and isolation strategy
+- [x] Generate infrastructure-design.md
+- [x] Generate deployment-architecture.md
+- [x] Request approval to proceed to Code Generation
 
 ## Planning Questions
 

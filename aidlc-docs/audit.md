@@ -413,3 +413,27 @@
 **Context**: Infrastructure Design in progress, awaiting answers.
 
 ---
+
+## CONSTRUCTION — Infrastructure Design UOW-01 Answers Received
+**Timestamp**: 2026-05-16T09:31:05Z
+**User Input**: "回答しました。次に進みます。"
+**AI Response**: Verified all answered planning questions in core-foundation-infrastructure-design-plan.md, checked the selected self-hosted topology against approved functional design, NFR design, and enabled Security Baseline rules, and found no blocking ambiguity requiring follow-up questions.
+**Context**: Infrastructure Design input verification complete for UOW-01 Core Foundation.
+
+---
+
+## CONSTRUCTION — Infrastructure Design UOW-01 Completion Draft
+**Timestamp**: 2026-05-16T09:31:05Z
+**User Input**: (stage execution)
+**AI Response**: Generated infrastructure-design.md and deployment-architecture.md for UOW-01 Core Foundation, updated the infrastructure design plan checklist to completed, and prepared the mandatory review and approval handoff.
+**Context**: Infrastructure Design artifacts generated; awaiting explicit approval.
+
+---
+
+## CONSTRUCTION — Infrastructure Design UOW-01 Approval Prompt Log
+**Timestamp**: 2026-05-16T09:31:05Z
+**User Input**: (prompt issued by AI)
+**AI Response**: Prompted user to review the infrastructure design artifacts and choose Request Changes or Continue to Next Stage.
+**Context**: Mandatory Infrastructure Design approval gate.
+
+---
