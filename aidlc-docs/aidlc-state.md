@@ -3,7 +3,7 @@
 ## Project Information
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-14T00:00:00Z
-- **Current Stage**: INCEPTION - Units Generation (Generation Complete, Awaiting Approval)
+- **Current Stage**: CONSTRUCTION - Functional Design (UOW-01 Core Foundation)
 
 ## Workspace State
 - **Existing Code**: No
@@ -27,10 +27,10 @@
 - [x] User Stories — COMPLETED
 - [x] Workflow Planning — COMPLETED
 - [x] Application Design — COMPLETED (EXECUTE)
-- [ ] Units Generation — IN PROGRESS (GENERATION COMPLETE, AWAITING APPROVAL)
+- [x] Units Generation — COMPLETED
 
 ### 🟢 CONSTRUCTION PHASE (per-unit loop)
-- [ ] Functional Design — PENDING (EXECUTE)
+- [ ] Functional Design — IN PROGRESS (EXECUTE)
 - [ ] NFR Requirements — PENDING (EXECUTE)
 - [ ] NFR Design — PENDING (EXECUTE)
 - [ ] Infrastructure Design — PENDING (EXECUTE)
