@@ -11,16 +11,16 @@ Translate approved NFR requirements into concrete non-functional design patterns
   - aidlc-docs/construction/core-foundation/functional-design/business-logic-model.md
 
 ## NFR Design Checklist
-- [ ] Define resilience patterns for auth and persistence failure paths
-- [ ] Define scalability patterns aligned with single-node baseline and replica-ready evolution
-- [ ] Define performance patterns for p95 <= 100ms token validation
-- [ ] Define security patterns for Argon2id, secrets rotation, and auditability
-- [ ] Define observability patterns (logs, metrics, alerting thresholds)
-- [ ] Define logical components and integration boundaries
-- [ ] Generate `nfr-design-patterns.md`
-- [ ] Generate `logical-components.md`
-- [ ] Validate design consistency against approved NFR requirements
-- [ ] Request approval to proceed to Infrastructure Design
+- [x] Define resilience patterns for auth and persistence failure paths
+- [x] Define scalability patterns aligned with single-node baseline and replica-ready evolution
+- [x] Define performance patterns for p95 <= 100ms token validation
+- [x] Define security patterns for Argon2id, secrets rotation, and auditability
+- [x] Define observability patterns (logs, metrics, alerting thresholds)
+- [x] Define logical components and integration boundaries
+- [x] Generate `nfr-design-patterns.md`
+- [x] Generate `logical-components.md`
+- [x] Validate design consistency against approved NFR requirements
+- [x] Request approval to proceed to Infrastructure Design
 
 ## Planning Questions
 
