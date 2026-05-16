@@ -33,8 +33,8 @@
 - [x] Functional Design — COMPLETED (UOW-01 Core Foundation)
 - [x] NFR Requirements — COMPLETED (UOW-01 Core Foundation)
 - [x] NFR Design — COMPLETED (UOW-01 Core Foundation)
-- [ ] Infrastructure Design — IN PROGRESS (EXECUTE)
-- [ ] Code Generation — PENDING (EXECUTE - ALWAYS)
+- [x] Infrastructure Design — COMPLETED (UOW-01 Core Foundation)
+- [ ] Code Generation — IN PROGRESS (UOW-01 Core Foundation - Part 1 Planning)
 - [ ] Build and Test — PENDING (EXECUTE - ALWAYS)
 
 ### 🟡 OPERATIONS PHASE
