@@ -397,3 +397,19 @@
 **Context**: NFR Design artifact generation complete for UOW-01; presenting approval gate.
 
 ---
+
+## CONSTRUCTION — NFR Design UOW-01 Approval Response
+**Timestamp**: 2026-05-16T08:47:38Z
+**User Input**: "承認してInfrastructure Designに進みます。"
+**AI Response**: NFR Design for UOW-01 approved. Marked NFR Design complete and transitioned to Infrastructure Design stage.
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Infrastructure Design UOW-01 Start
+**Timestamp**: 2026-05-16T08:47:38Z
+**User Input**: (stage transition)
+**AI Response**: Started Infrastructure Design for UOW-01 Core Foundation and generated infrastructure-design planning questions file.
+**Context**: Infrastructure Design in progress, awaiting answers.
+
+---
