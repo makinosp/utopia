@@ -14,14 +14,14 @@ Define detailed business logic for authentication, API compatibility mapping, er
   - Shared data access patterns and contracts
 
 ## Planning Checklist
-- [ ] Analyze authentication requirements and token lifecycle
-- [ ] Define principal representation (user context for authorization scopes)
-- [ ] Analyze Firefly compatibility requirements (pagination, response structure, error format)
-- [ ] Define centralized error categorization and mapping rules
-- [ ] Analyze transaction boundary strategy and isolation requirements
-- [ ] Define shared data contract primitives consumed by domain units
-- [ ] Generate functional design artifacts
-- [ ] Request planning approval to proceed to artifact generation
+- [x] Analyze authentication requirements and token lifecycle
+- [x] Define principal representation (user context for authorization scopes)
+- [x] Analyze Firefly compatibility requirements (pagination, response structure, error format)
+- [x] Define centralized error categorization and mapping rules
+- [x] Analyze transaction boundary strategy and isolation requirements
+- [x] Define shared data contract primitives consumed by domain units
+- [x] Generate functional design artifacts
+- [x] Request planning approval to proceed to artifact generation
 
 ## Planning Questions
 
