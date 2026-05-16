@@ -241,3 +241,19 @@
 **Context**: Functional Design artifact generation complete for UOW-01; presenting approval gate.
 
 ---
+
+## CONSTRUCTION — Functional Design UOW-01 Approval Response
+**Timestamp**: 2026-05-16T00:00:00Z
+**User Input**: "承認して NFR Requirements へ進みます。"
+**AI Response**: Functional Design for UOW-01 approved. Marked Functional Design complete and transitioned to NFR Requirements stage.
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — NFR Requirements UOW-01 Start
+**Timestamp**: 2026-05-16T00:00:00Z
+**User Input**: (stage transition)
+**AI Response**: Started NFR Requirements for UOW-01 Core Foundation and generated nfr-requirements planning questions file.
+**Context**: NFR Requirements in progress, awaiting answers.
+
+---
