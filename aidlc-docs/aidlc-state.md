@@ -8,7 +8,8 @@
 ## Workspace State
 - **Existing Code**: No
 - **Reverse Engineering Needed**: No
-- **Workspace Root**: /home/sheeptech/projects/utopia
+- **Workspace Root**: <REPO_ROOT>
+- **Path convention**: See `aidlc-docs/guidelines/path-conventions.md`
 
 ## Code Location Rules
 - **Application Code**: Workspace root (NEVER in aidlc-docs/)
