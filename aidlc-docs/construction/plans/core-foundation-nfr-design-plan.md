@@ -35,7 +35,7 @@ C) Retry up to 3 times with exponential backoff, then fail closed
 D) Circuit breaker + fallback cache for previously validated tokens
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: A - Fail closed without request-path retries, but still emit structured logs, metrics, and alert events for the failure.
 
 ## Question 2
 How should circuit breaker behavior be designed for the auth/persistence boundary?
@@ -46,7 +46,7 @@ C) Active breaker with open/half-open/closed states and short recovery probes
 D) Active breaker with per-endpoint thresholds
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: A
 
 ## Question 3
 Which cache strategy should be applied to token validation in this stage?
@@ -57,7 +57,7 @@ C) In-memory TTL cache for positive and negative lookups
 D) Shared external cache (Redis) required from day one
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: X - Positive-only in-memory short TTL cache with explicit invalidation on token revocation or secret rotation; persistence remains the source of truth on cache miss.
 
 ## Question 4
 How should Argon2id parameter tuning be handled for performance/security balance?
@@ -68,7 +68,7 @@ C) Environment-configurable + runtime hot reload
 D) Auto-tune at startup based on host benchmarks
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: B
 
 ## Question 5
 What log redaction policy should be enforced?
@@ -79,7 +79,7 @@ C) Redact secrets + user-identifying fields except stable user_id
 D) Redact everything sensitive and store only aggregate event counters
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: C
 
 ## Question 6
 How should metrics and alerts be partitioned for operations?
@@ -90,7 +90,7 @@ C) Service-level + auth + endpoint-level metrics
 D) Full high-cardinality metrics with per-user labels
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: B
 
 ## Question 7
 What scaling design posture should be documented for read replicas?
@@ -101,7 +101,7 @@ C) Implement read routing abstraction now with feature flag
 D) Full read replica routing design including lag-aware reads
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: B
 
 ## Question 8
 How should alert severity mapping be designed for auth failure spikes?
@@ -112,7 +112,7 @@ C) Multi-level thresholds with auto-silence during maintenance windows
 D) No alerts; rely on manual dashboard monitoring
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: X - Warning when auth failure rate exceeds 5 percent for 10 minutes; critical when the condition persists for 15 minutes or repeats across three consecutive evaluation windows; document escalation windows in the design artifact.
 
 ## Question 9
 What property-based test integration pattern should be reflected in NFR design?
@@ -123,7 +123,7 @@ C) Integrate PBT in CI gating for selected core modules
 D) Defer PBT integration design to code generation stage
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: A - Keep PBT scoped to serialization helpers only in this unit, matching the approved partial enforcement for decimal round-trip properties.
 
 ## Question 10
 Which logical component boundary should be emphasized for Core Foundation?
@@ -134,4 +134,4 @@ C) Separate components + Policy Engine for authorization and redaction rules
 D) Event-driven internal components with async message handoff
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]:
+[Answer]: X - Use in-process logical subcomponents for Auth Validator, Error Mapper, Metrics, and Audit concerns, composed behind a single auth middleware facade rather than separately deployed components.

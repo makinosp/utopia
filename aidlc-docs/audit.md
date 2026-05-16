@@ -258,6 +258,14 @@
 
 ---
 
+## CONSTRUCTION — NFR Design UOW-01 Q&A Support
+**Timestamp**: 2026-05-16T08:25:34Z
+**User Input**: "これらの質問に答えたいです。推奨される回答を提示し、ファイルに書き込んでください。私への質問があればいつでも質問してください。"
+**AI Response**: Reviewed the approved NFR requirements, tech stack decisions, business logic model, and enabled extension rules. Filled recommended answers in core-foundation-nfr-design-plan.md for resilience, scalability, performance, security, observability, and logical component boundaries.
+**Context**: NFR Design planning support for UOW-01 Core Foundation. Recommended answers were written directly into the question file.
+
+---
+
 ## CONSTRUCTION — NFR Requirements UOW-01 Answers Received
 **Timestamp**: 2026-05-16T00:00:00Z
 **User Input**: "回答しました。続行します。"
@@ -270,6 +278,106 @@
 **Timestamp**: 2026-05-16T08:17:50Z
 **User Input**: "承認して次に進みます。"
 **AI Response**: NFR Requirements for UOW-01 approved. Marked NFR Requirements complete and transitioned to NFR Design stage.
+
+---
+
+## CONSTRUCTION — NFR Design UOW-01 Critique Review
+**Timestamp**: 2026-05-16T08:31:06Z
+**User Input**: "次のような指摘がありました。
+## NFR設計計画の批判的レビュー
+
+### 全体的な評価
+このNFR設計計画は、要件と技術的決定を踏まえた合理的な選択肢を示していますが、いくつかの重要な懸念点があります。
+
+### 良い点
+
+1. **一貫性**: 計画はNFR要件と技術的決定と整合性があります
+2. **実現可能性**: 単一ノードベースの現実的なアプローチを選択
+3. **セキュリティ重視**: Argon2id、シークレット管理、監査ログの適切な要件
+4. **観測可能性**: 構造化ログとメトリクスの要件が明確
+
+### 主要な懸念点
+
+#### 1. 耐障害性設計の矛盾
+
+**問題**: 計画では「データベースアクセス失敗時に即時クローズ（選択A）」を選択していますが、これはNFR要件の`REL-003`と矛盾しています。
+
+> **REL-003**: "If persistence is unavailable, service must fail closed for protected operations and emit structured error and alert events."
+
+**矛盾点**:
+- 選択A: 「リクエストパスでのリトライなし」
+- REL-003: 「構造化エラーとアラートイベントを発行」
+- これらは両立しません。構造化ログ/アラートを発行するには、少なくともリクエストを処理する必要があります
+
+**推奨**: 選択B「短いバックオフで1回リトライ、その後クローズ」の方が要件に適合します
+
+#### 2. キャッシュ戦略の不整合
+
+**問題**: 選択A「キャッシュなし」はパフォーマンス要件`PRF-001`（p95 <= 100ms）と矛盾する可能性があります。
+
+**懸念点**:
+- トークン検証で毎回データベースにアクセスする場合、100msのp95目標達成が困難
+- 特に高負荷時（`PRF-002`の100リクエスト/秒）に問題が顕在化
+
+**推奨**: 選択B「肯定的なトークン検索のみの短TTLインメモリキャッシュ」を検討
+
+#### 3. 論理コンポーネント設計の過剰分割
+
+**問題**: 選択B「Auth Validator, Error Mapper, Metrics Emitter, Audit Logger」の分割は、単一ノードベースの初期段階では過剰です。
+
+**懸念点**:
+- 過度のコンポーネント分割は、単一ノード環境では不必要な複雑性を導入
+- コンポーネント間の通信オーバーヘッドがパフォーマンスに悪影響
+
+**推奨**: 選択A「Auth middleware as monolithic cross-cutting component」の方が初期段階には適切
+
+#### 4. アラート設計の不十分さ
+
+**問題**: 選択B「Warning + critical thresholds with escalation windows」は、具体的なしきい値やエスカレーションルールが定義されていません。
+
+**懸 concern**:
+- `PRF-003`では「3連続の5分ウィンドウ」が指定されていますが、アラート設計に具体性が不足
+- エスカレーションウィンドウの定義がない
+
+**推奨**: 具体的なしきい値とエスカレーションルールを明確化
+
+#### 5. プロパティベーステスト統合の不整合
+
+**問題**: 選択A「Keep PBT isolated to serialization helpers only」は、拡張設定で「Property-Based Testing: Partial enforcement」と矛盾しています。
+
+**懸念点**:
+- 「部分的な適用」という設定を完全に無視する選択
+- コアビジネスロードのテストカバレッジが不十分になるリスク
+
+**推奨**: 選択B「Integrate PBT in shared test utilities for all core value-object round trips」の方が設定に適合
+
+### 具体的な改善提案
+
+1. **耐障害性設計の再検討**:
+	- 選択A → 選択Bへ変更
+	- 構造化ログ/アラート発行のための最低限のリトライ戦略を導入
+
+2. **キャッシュ戦略の再評価**:
+	- 選択A → 選択Bへ変更
+	- パフォーマンス要件達成のための短TTLキャッシュを導入
+
+3. **論理コンポーネント設計の簡素化**:
+	- 選択B → 選択Aへ変更
+	- 単一ノード環境での複雑性を削減
+
+4. **アラート設計の具体化**:
+	- 具体的なしきい値とエスカレーションルールを追加
+	- 例: 「2回の警告 → 1時間以内に改善なければ重大アラート」
+
+5. **プロパティベーステスト統合の調整**:
+	- 選択A → 選択Bへ変更
+	- 設定の「部分的な適用」に準拠
+
+### 総合評価
+
+この計画は技術的には合理的ですが、要件との整合性や実現可能性の観点から重要な調整が必要です。特に耐障害性設計とキャッシュ戦略の選択は、パフォーマンス要件とのバランスを考慮する必要があります。上記の改善提案を反映することで、より堅牢で実現可能なNFR設計になるでしょう。"
+**AI Response**: Reassessed each critique against the approved NFR requirements, tech stack decisions, functional design, and component dependency rules. Kept fail-closed behavior for persistence failures, refined the cache decision to a positive-only short TTL cache with explicit invalidation, made alert severity mapping concrete, preserved the approved PBT scope for this unit, and clarified that logical components are in-process modules behind a single middleware facade rather than separately deployed services.
+**Context**: NFR Design planning refinement after external critique review.
 **Context**: Stage approval gate passed.
 
 ---
