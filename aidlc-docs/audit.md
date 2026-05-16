@@ -257,3 +257,11 @@
 **Context**: NFR Requirements in progress, awaiting answers.
 
 ---
+
+## CONSTRUCTION — NFR Requirements UOW-01 Answers Received
+**Timestamp**: 2026-05-16T00:00:00Z
+**User Input**: "回答しました。続行します。"
+**AI Response**: Verified all NFR answers, detected no blocking ambiguity, generated nfr-requirements.md and tech-stack-decisions.md, and moved stage to awaiting approval.
+**Context**: NFR Requirements artifact generation complete for UOW-01; presenting approval gate.
+
+---

@@ -14,16 +14,16 @@ Define non-functional requirements and technology decisions for Core Foundation 
   - Property-Based Testing: Partial
 
 ## NFR Planning Checklist
-- [ ] Analyze security risk profile for authentication and token handling
-- [ ] Define performance targets for auth-critical request path
-- [ ] Define scalability targets and trigger points
-- [ ] Define reliability and failure-handling requirements
-- [ ] Define availability and recovery expectations
-- [ ] Define observability and operational monitoring requirements
-- [ ] Define maintainability and testing quality gates
-- [ ] Define technology constraints and stack decisions
-- [ ] Generate NFR artifacts (`nfr-requirements.md`, `tech-stack-decisions.md`)
-- [ ] Request approval to proceed to NFR Design
+- [x] Analyze security risk profile for authentication and token handling
+- [x] Define performance targets for auth-critical request path
+- [x] Define scalability targets and trigger points
+- [x] Define reliability and failure-handling requirements
+- [x] Define availability and recovery expectations
+- [x] Define observability and operational monitoring requirements
+- [x] Define maintainability and testing quality gates
+- [x] Define technology constraints and stack decisions
+- [x] Generate NFR artifacts (`nfr-requirements.md`, `tech-stack-decisions.md`)
+- [x] Request approval to proceed to NFR Design
 
 ## Planning Questions
 
