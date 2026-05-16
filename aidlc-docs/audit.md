@@ -217,3 +217,27 @@
 **Context**: Units Generation Part 2 completed; waiting for explicit user approval to mark stage complete.
 
 ---
+
+## INCEPTION — Units Generation Approval Response
+**Timestamp**: 2026-05-16T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: Units Generation approved. Marking INCEPTION phase complete. Transitioning to CONSTRUCTION phase with per-unit loop execution starting at UOW-01 Core Foundation.
+**Context**: Units Generation stage approved and complete.
+
+---
+
+## CONSTRUCTION — Functional Design UOW-01 Input Request
+**Timestamp**: 2026-05-16T00:00:00Z
+**User Input**: (prompt issued by AI)
+**AI Response**: Created core-foundation-functional-design-plan.md with 10 design questions. Requested user to fill all [Answer] fields.
+**Context**: Functional Design Part 1 (Planning) question gate opened for UOW-01 Core Foundation.
+
+---
+
+## CONSTRUCTION — Functional Design UOW-01 Answers Received
+**Timestamp**: 2026-05-16T00:00:00Z
+**User Input**: "回答しました。続行します。"
+**AI Response**: Verified all 10 answers. No blocking contradictions detected. Generated domain-entities.md, business-rules.md, and business-logic-model.md for UOW-01 Core Foundation.
+**Context**: Functional Design artifact generation complete for UOW-01; presenting approval gate.
+
+---
