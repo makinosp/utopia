@@ -1,0 +1,35 @@
+[package]
+name = "utopia"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+argon2 = "0.5.3"
+async-trait = "0.1.86"
+axum = "0.7.9"
+base64 = "0.22.1"
+chrono = { version = "0.4.39", features = ["serde"] }
+dotenvy = "0.15.7"
+http = "1.2.0"
+moka = { version = "0.12.10", features = ["future"] }
+prometheus = "0.13.4"
+rand = "0.8.5"
+rust_decimal = { version = "1.36.0", features = ["serde"] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
+sha2 = "0.10.8"
+sqlx = { version = "0.8.3", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono"] }
+subtle = "2.6.1"
+thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "signal"] }
+tower = "0.5.2"
+tower-http = { version = "0.6.2", features = ["set-header", "trace", "request-id"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
+uuid = { version = "1.12.1", features = ["v4", "serde"] }
+
+[dev-dependencies]
+proptest = "1.6.0"
+testcontainers = "0.23.3"
+testcontainers-modules = { version = "0.11.4", features = ["postgres"] }
