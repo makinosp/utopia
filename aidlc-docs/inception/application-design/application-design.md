@@ -10,7 +10,7 @@ Design decisions are based on approved answers in the application design plan:
 - Transaction boundary: One DB transaction per mutating request
 - Authorization: Defense in depth at handler and service levels
 - Monetary handling: Decimal internal model with DTO string conversion
-- Internal communication: Direct synchronous calls
+- Internal communication: Direct in-process calls between components
 - Error mapping: Central core mapper with domain extension points
 - Interface style: Repository traits with concrete services
 - Infrastructure assumption: PostgreSQL-first
@@ -26,7 +26,7 @@ Design decisions are based on approved answers in the application design plan:
 - Security layer: Auth Component.
 - Domain modules: Accounts, Transactions, Budgets, Metadata.
 - Cross-cutting modules: Compatibility Component, Error Mapping Component.
-- Persistence layer: Repository traits plus PostgreSQL adapters and transaction manager.
+- Persistence layer: Repository traits plus PostgreSQL adapters; request-scoped transactions are managed directly inside services.
 
 ## Design Completeness Check
 - Component boundaries are defined.

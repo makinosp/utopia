@@ -66,7 +66,6 @@ Following the approved greenfield single-package layout:
       persistence/
         mod.rs
         db.rs
-        transaction_manager.rs
         repository.rs
     modules/  (empty placeholder mods for UOW-02..05)
       mod.rs
@@ -97,6 +96,7 @@ Following the approved greenfield single-package layout:
 - [ ] Include: axum, tokio, serde, serde_json, sqlx (postgres, runtime-tokio), argon2,
   uuid, rust_decimal, tracing, tracing-subscriber, prometheus, tower, tower-http,
   anyhow, thiserror, dotenvy, rand, moka (with time and tokio features), sha2, proptest
+- [ ] Include dev-dependencies: testcontainers (and optionally testcontainers-modules) for DB-backed integration tests
 - [ ] Verify the chosen `moka` release supports the intended async/time feature names; adjust the feature set to the version-specific names before generating `Cargo.toml`
 - [ ] Create `Cargo.lock` (generated on first build)
 - [ ] Create `.env.example` documenting all required environment variables, including bootstrap-specific settings
@@ -136,29 +136,56 @@ Following the approved greenfield single-package layout:
   - `last_used_at TIMESTAMPTZ`
   - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - [ ] Create index on `personal_access_tokens(token_sha256)` for O(1) lookup
+- [ ] Create `bootstrap_key_usage` table to enforce one-time bootstrap key semantics:
+  - `key_hash TEXT PRIMARY KEY`
+  - `used_at TIMESTAMPTZ`
+  - `used_by UUID REFERENCES users(id)`
+  - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
+- [ ] Persist only the SHA-256 hash of `BOOTSTRAP_KEY`; the raw secret remains environment-only and is never written to disk or database
 - Story coverage: US-021 data model, US-022 lookup path
 
 ### Step 5 — Repository Interface (`src/core/persistence/repository.rs`)
-- [ ] Define `TokenRepository` trait with read and write interface seam:
+- [ ] Define `TokenReadRepository` trait with read methods accepting a generic `sqlx::Executor<'c, Database = sqlx::Postgres>` so reads can execute against either a `PgPool` or a `Transaction`.
   ```rust
-  pub trait TokenReadRepository { ... }
-  pub trait TokenWriteRepository { ... }
+  pub trait TokenReadRepository {
+      async fn find_by_sha256<'c, E>(
+          &self,
+          executor: E,
+          token_sha256: &str,
+      ) -> Result<Option<TokenRecord>, RepoError>
+      where
+          E: sqlx::Executor<'c, Database = sqlx::Postgres> + Send;
+  }
+  ```
+- [ ] Define `TokenWriteRepository` trait with write methods accepting `&mut sqlx::Transaction<'_, sqlx::Postgres>` to enforce request-scoped transaction participation.
+  ```rust
+  pub trait TokenWriteRepository {
+      async fn create_token(
+          &self,
+          tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+          token: &TokenRecord,
+      ) -> Result<(), RepoError>;
+  }
   ```
   Methods: `find_by_sha256`, `find_by_id`, `create_token`, `revoke_token`
-- [ ] Define `UserReadRepository` trait:
+- [ ] Define `UserReadRepository` trait with generic executor support:
   Methods: `find_by_id`, `find_by_email`
 - [ ] Define `UserWriteRepository` trait for bootstrap provisioning:
-  Methods: `create_user`
-- [ ] Define `TokenUpdateRepository` trait for fire-and-forget updates:
-  Methods: `update_last_used_at(&self, token_sha256: &str) -> Result<(), sqlx::Error>`
-- [ ] Implement `PgTokenRepository` and `PgUserRepository` using `sqlx`; the user repository must support both lookup and bootstrap user creation paths
+  Methods: `create_user(&mut sqlx::Transaction<'_, sqlx::Postgres>, ...)`
+- [ ] Define `TokenUpdateRepository` trait for executor-based `last_used_at` updates so a background task can use a cloned `PgPool` without opening a transaction:
+  Methods: `update_last_used_at<'c, E>(&self, executor: E, token_sha256: &str) -> Result<(), sqlx::Error>` where `E: sqlx::Executor<'c, Database = sqlx::Postgres> + Send`
+- [ ] Define `BootstrapKeyRepository` trait for atomic one-time bootstrap-key claims inside the issuance transaction:
+  Methods: `claim_bootstrap_key(&mut sqlx::Transaction<'_, sqlx::Postgres>, key_hash: &str, used_by: Option<Uuid>) -> Result<bool, RepoError>` where `false` indicates the key has already been consumed
+- [ ] Implement `PgTokenRepository` and `PgUserRepository` using `sqlx`; `PgTokenRepository` must support lookup, revocation, and executor-based `last_used_at` updates, while the user repository must support both lookup and bootstrap user creation paths.
+- [ ] Implement `PgBootstrapKeyRepository` using `sqlx`; the bootstrap usage row must be claimed and marked consumed atomically so the first successful bootstrap issuance wins and later attempts fail closed.
 - [ ] All queries use parameterized statements (no string concatenation)
 - Story coverage: BR-AUTH-002 token lookup, BR-AUTHZ-001 ownership filter, SECURITY-05
 
-### Step 6 — Transaction Manager (`src/core/persistence/transaction_manager.rs`)
-- [ ] Implement `TransactionManager` backed by `sqlx::Transaction<'_, Postgres>`
-- [ ] Expose `in_request_tx<T, F>(pool, work) -> Result<T, DomainError>`
-- [ ] Transaction commits on success, rolls back on any error path
+### Step 6 — Service-Managed Request Transaction Boundary
+- [ ] Implement request-scoped transaction handling directly inside mutating application services using `sqlx::PgPool::begin()`
+- [ ] Pass `&mut sqlx::Transaction<'_, sqlx::Postgres>` into write repository methods and commit on success / roll back on any error path
+- [ ] Keep read repository methods executor-based so they can run against either the pool or a transaction
+- [ ] Document that request-scoped transaction control belongs to the application service layer rather than a dedicated transaction manager abstraction
 - Story coverage: BR-TX-001, BR-TX-002, BR-TX-003, REL-002
 
 ### Step 7 — Core Domain Types and Error Taxonomy (`src/core/auth/models.rs`, `src/core/auth/error.rs`)
@@ -188,12 +215,12 @@ Following the approved greenfield single-package layout:
   1. Extract token from `Bearer <value>` format
   2. Reject malformed format with `TokenMalformed`
   3. Compute a fast `sha256_token` fingerprint from the raw token and check cache (both positive and negative entries)
-  4. On cache hit: extract `user_id` from the cache entry; resolve the full `Principal { user_id, email }` via `UserReadRepository::find_by_id`; return the cached result (or cached error for negative cache) without Argon2 work
+  4. On cache hit: return the cached `Principal` directly from the `TokenCacheEntry` (or cached error for negative cache) without additional `UserReadRepository` lookups or Argon2 work
   5. On cache miss: query repository by `token_sha256`
   6. If a record exists and `status = Revoked`, return `TokenRevoked` immediately when the `token_sha256` matches; only non-revoked records proceed to Argon2id verification
   7. If verification succeeds, load owning user; reject if `blocked = true`
   8. Cache valid result (positive) or invalid result (negative with short TTL)
-  9. Spawn fire-and-forget task for `last_used_at` update using `PgPool` clone (not transaction)
+  9. Spawn fire-and-forget task for `last_used_at` update using a cloned `PgPool` and the executor-based `TokenUpdateRepository` method (not a transaction)
   10. If the background update fails, record `auth_dependency_failure_total` and emit `tracing::error!` with safe identifiers only; never log raw tokens
   11. Return `Principal`
 - [ ] Fail closed on persistence errors (no in-request retries)
@@ -202,7 +229,7 @@ Following the approved greenfield single-package layout:
 - Story coverage: US-022, BR-AUTH-001, BR-AUTH-002, REL-003, Pattern R-01, R-02
 
 ### Step 11 — Token Cache (`src/core/auth/cache.rs`)
-- [ ] Implement `TokenCacheEntry` struct containing `user_id`, `token_status`, `cached_at`; keep `email` out of cache entries to reduce long-lived PII retention
+- [ ] Implement `TokenCacheEntry` struct containing `user_id`, `email`, `token_status`, `cached_at`; use this cached principal snapshot to avoid user lookup on cache hit while keeping PII in-memory only
 - [ ] Implement `CachedAuthResult` enum: `Valid(TokenCacheEntry)` | `Invalid { reason: AuthError }`
 - [ ] Use `sha256_token` as key (not Argon2 hash) to avoid expensive Argon2 computation on cache hit
 - [ ] Implement positive cache: valid tokens with TTL from `TOKEN_CACHE_TTL_SECS`
@@ -236,15 +263,15 @@ Following the approved greenfield single-package layout:
     }
   }
   ```
-- [ ] Implement `TokenService::issue_token(label, principal, repo, tx_manager)`:
+- [ ] Implement `TokenService::issue_token(label, principal, repo, pool)`:
   1. Generate 32+ bytes of cryptographic randomness (`rand::thread_rng`)
   2. Encode as URL-safe base64
   3. Compute `sha256_token` from the raw token and persist it for fast validator lookup
   4. Hash with Argon2id using validated parameters from config
-  5. Persist `TokenRecord` (status: Active) inside transaction boundary, including both `token_sha256` and `token_hash`
+  5. Persist `TokenRecord` (status: Active) inside the service-managed issuance transaction, including both `token_sha256` and `token_hash`
   6. Return `TokenIssuanceResponse` with raw token value + record metadata
 - [ ] Document idempotency: token issuance is not idempotent; repeated requests produce new tokens
-- [ ] Implement `TokenService::revoke_token(token_id, principal, repo, tx_manager, cache)`:
+- [ ] Implement `TokenService::revoke_token(token_id, principal, repo, pool, cache)`:
   1. Look up token by ID
   2. Verify ownership (caller is token owner OR has Owner role)
   3. Set status to `Revoked`; persist update
@@ -252,10 +279,11 @@ Following the approved greenfield single-package layout:
   5. Return HTTP 204
 - [ ] Implement bootstrap issuance path for first-access token:
   - Accept `X-Bootstrap-Key` and compare it to the configured bootstrap secret using constant-time equality; do not log or echo the raw value
+  - Compute `sha256(BOOTSTRAP_KEY)` and claim the matching PostgreSQL bootstrap usage row inside the service-managed issuance transaction before any user or token creation work begins
   - Create or locate the bootstrap identity/user via `UserReadRepository::find_by_email` and `UserWriteRepository::create_user` before issuing the first PAT
   - Use `BOOTSTRAP_USER_EMAIL` from configuration as the bootstrap user identifier for lookup/creation
   - Return token payload once and do not store raw token
-  - Restrict bootstrap endpoint to a one-time or rolling bootstrap key
+  - Enforce a one-time bootstrap key only; once `used_at` is recorded in the database, reject any subsequent request until an explicit DB/admin reset clears the usage row
 - [ ] Wire `POST /api/v1/tokens` (issuance) and `DELETE /api/v1/tokens/{id}` (revocation) in `src/api/handlers/tokens.rs`
 - [ ] Wire `POST /api/v1/bootstrap/tokens` as bootstrap token issuance endpoint in `src/api/handlers/tokens.rs`
 - Story coverage: US-021, BR-AUTH-003, BR-AUTH-004, BR-AUTHZ-002, SEC-001, SEC-002
@@ -315,7 +343,7 @@ Following the approved greenfield single-package layout:
 - [ ] `decimal_serialization_test.rs` **(PBT scope per MNT-001)**:
   property-based round-trip test using `proptest` crate:
   `forall valid decimal string s: deserialize(serialize(s)) == s`
-- [ ] Run DB-backed tests against ephemeral PostgreSQL containers using `testcontainers`; apply `migrations/0001_initial_schema.sql` at test startup so integration-style auth and token tests use the real schema
+- [ ] Run DB-backed tests against ephemeral PostgreSQL containers using `testcontainers`; apply `migrations/0001_initial_schema.sql` at test startup so integration-style auth and token tests use the real schema and verify service-managed transaction commit/rollback behavior
 - Story coverage: MNT-001 (PBT), MNT-002 (unit test pyramid), US-021, US-022
 
 ### Step 19 — Docker Compose and Deployment Artifacts (`docker/`)
@@ -347,6 +375,7 @@ Following the approved greenfield single-package layout:
   - Interface contracts exposed for downstream units
   - Environment variable reference table
   - Run instructions (`cargo build`, `cargo test`, `docker compose up`)
+  - Service-managed transaction boundary and explicit transaction ownership model
   - Argon2id parameter policy, including how hash-parameter changes affect existing tokens and the recommended response (for example, reissue tokens or perform a staged migration when hashing policy changes)
 - Story coverage: MNT-003 (documentation requirements)
 

@@ -129,7 +129,7 @@ match error type:
    b. Map the failure to an appropriate error response using Flow 4.
 5. Return result.
 
-**Rule**: All steps 2 through 4 are coordinated by the `TransactionManager`. Services do not manage transaction commit/rollback directly.
+**Rule**: All steps 2 through 4 are coordinated by the application service. Services manage transaction begin/commit/rollback directly.
 
 ---
 
