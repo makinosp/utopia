@@ -437,3 +437,35 @@
 **Context**: Mandatory Infrastructure Design approval gate.
 
 ---
+
+## CONSTRUCTION — Infrastructure Design UOW-01 Approval Response
+**Timestamp**: 2026-05-17T10:20:58Z
+**User Input**: "承認してCode Generationに進みます。"
+**AI Response**: Infrastructure Design approved. Transitioned to Code Generation Part 1 and generated `core-foundation-code-generation-plan.md`.
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Code Generation UOW-01 Part 1 Approval Response
+**Timestamp**: 2026-05-17T10:20:58Z
+**User Input**: "計画を承認してPart 2 (Generation)に進みます。"
+**AI Response**: Code Generation plan approved. Started Part 2 (Generation) execution for UOW-01 Core Foundation.
+**Context**: Part 1 approval gate passed.
+
+---
+
+## CONSTRUCTION — Code Generation UOW-01 Part 2 Execution
+**Timestamp**: 2026-05-17T10:20:58Z
+**User Input**: (stage execution)
+**AI Response**: Generated application code, migrations, tests, Docker deployment artifacts, and code summary for UOW-01; marked all checkboxes in `core-foundation-code-generation-plan.md` as completed and validated with `cargo check`.
+**Context**: Code Generation Part 2 completed; awaiting explicit approval.
+
+---
+
+## CONSTRUCTION — Code Generation UOW-01 Approval Prompt Log
+**Timestamp**: 2026-05-17T10:20:58Z
+**User Input**: (prompt issued by AI)
+**AI Response**: Prompted user to review generated code and choose Request Changes or Continue to Next Stage.
+**Context**: Mandatory Code Generation approval gate.
+
+---

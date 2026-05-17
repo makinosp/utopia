@@ -1,0 +1,26 @@
+{
+  email admin@utopia.local
+}
+
+:80 {
+  redir https://{host}{uri}
+}
+
+:443 {
+  encode zstd gzip
+
+  header {
+    Content-Security-Policy "default-src 'self'"
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  log {
+    output stdout
+    format json
+  }
+
+  reverse_proxy utopia-api:3000
+}

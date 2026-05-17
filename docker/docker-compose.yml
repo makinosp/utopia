@@ -1,0 +1,123 @@
+services:
+  utopia-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: utopia-api:0.1.0
+    container_name: utopia-api
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+    networks:
+      - internal
+    expose:
+      - "3000"
+
+  postgres:
+    image: postgres:17.2-alpine3.21
+    container_name: utopia-postgres
+    environment:
+      POSTGRES_DB: utopia
+      POSTGRES_USER: utopia
+      POSTGRES_PASSWORD: utopia
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    container_name: utopia-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - utopia-api
+    networks:
+      - edge
+      - internal
+
+  pgbackrest:
+    image: pgbackrest/pgbackrest:2.53
+    container_name: utopia-pgbackrest
+    profiles: ["observability"]
+    networks:
+      - internal
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: utopia-prometheus
+    profiles: ["observability"]
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - internal
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    container_name: utopia-grafana
+    profiles: ["observability"]
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      GF_ALERTING_ENABLED: "true"
+    networks:
+      - internal
+
+  loki:
+    image: grafana/loki:3.2.0
+    container_name: utopia-loki
+    profiles: ["observability"]
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    networks:
+      - internal
+
+  promtail:
+    image: grafana/promtail:3.2.0
+    container_name: utopia-promtail
+    profiles: ["observability"]
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["-config.file=/etc/promtail/config.yml"]
+    networks:
+      - internal
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: utopia-node-exporter
+    profiles: ["observability"]
+    networks:
+      - internal
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    container_name: utopia-postgres-exporter
+    profiles: ["observability"]
+    environment:
+      DATA_SOURCE_NAME: postgres://utopia:utopia@postgres:5432/utopia?sslmode=disable
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+networks:
+  edge:
+  internal:

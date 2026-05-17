@@ -1,0 +1,26 @@
+groups:
+  - name: utopia-core-foundation
+    rules:
+      - alert: UtopiaAuthFailureRateHigh
+        expr: sum(rate(auth_failures_total[10m])) / clamp_min(sum(rate(authenticated_requests_total[10m])) + sum(rate(auth_failures_total[10m])), 1) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Auth failure rate is above 5%"
+
+      - alert: UtopiaHttp5xxRateHigh
+        expr: sum(rate(http_5xx_total[10m])) > 0.01
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HTTP 5xx rate is above threshold"
+
+      - alert: UtopiaAuthLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(auth_validation_latency_ms_bucket[15m])) by (le)) > 100
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Auth p95 latency is above 100ms"
