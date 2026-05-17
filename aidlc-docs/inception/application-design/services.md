@@ -43,9 +43,9 @@ Chosen orchestration style: rich application service layer for write operations.
 1. Handler validates transport-level input.
 2. Auth service resolves principal.
 3. Service performs policy and domain-level authorization.
-4. Service invokes transaction manager for request-scoped DB transaction.
-5. Service performs repository operations.
-6. Service returns domain view.
+4. Service begins a database transaction directly.
+5. Service performs repository operations within the transaction.
+6. Service commits on success or rolls back on error, then returns domain view.
 7. Compatibility mapping service builds Firefly-compatible response.
 
 ## Read Flow Pattern
@@ -57,6 +57,6 @@ Chosen orchestration style: rich application service layer for write operations.
 
 ## Security and Consistency Policies in Services
 - Defense in depth: auth checks at handler and service boundaries.
-- Mutating requests: one DB transaction per request.
+- Mutating requests: one DB transaction per request, owned directly by the application service.
 - Errors: centralized mapping to consistent API error payload.
 - Monetary handling: decimal in domain/service, string at DTO boundary.

@@ -84,7 +84,7 @@ X) Other (please describe after [Answer]: tag below)
 ## Question 7
 What communication pattern should components use internally?
 
-A) Direct synchronous calls between components
+A) Direct in-process calls between components
 B) Event-driven internal messages for state changes
 C) Hybrid: synchronous for reads, event-driven for selected writes
 X) Other (please describe after [Answer]: tag below)

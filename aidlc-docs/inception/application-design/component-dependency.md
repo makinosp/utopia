@@ -5,7 +5,7 @@ Architecture style: domain modules with internal layers and shared cross-cutting
 
 ## Dependency Rules
 - API Handler depends on Auth, Domain Services, Compatibility Mapper, and Error Mapper.
-- Domain Services depend on Repository traits and Transaction Manager.
+- Domain Services depend on Repository traits and the PostgreSQL pool for explicit request transaction control.
 - Domain Services may depend on Compatibility primitives only for normalization contracts, not transport DTOs.
 - Compatibility Mapper depends on domain views and Firefly DTO definitions.
 - Error Mapper depends on domain/auth/validation error types.
@@ -20,16 +20,16 @@ Architecture style: domain modules with internal layers and shared cross-cutting
 | API Handler | Compatibility Mapper | Runtime | Response mapping | Yes |
 | API Handler | Error Mapper | Runtime | Error translation | Yes |
 | Domain Services | Repository Traits | Runtime | Data access abstraction | Yes |
-| Domain Services | Transaction Manager | Runtime | Request transaction boundary | Yes |
+| Domain Services | PostgreSQL Pool | Runtime | Explicit request transaction boundary | Yes |
 | Domain Services | Other Domain Services | Runtime | Cross-domain usage | Prefer avoid |
 | Compatibility Mapper | Domain Views | Compile-time | DTO transformation | Yes |
 | Error Mapper | Domain/Auth Errors | Compile-time | Error transformation | Yes |
 | Persistence Adapters | PostgreSQL | Runtime | Storage | Yes |
 
 ## Communication Patterns
-- Internal pattern: direct synchronous calls between components.
+- Internal pattern: direct in-process calls between components.
 - Read path: handler -> service -> repository -> service -> mapper -> response.
-- Write path: handler -> auth -> service -> transaction manager -> repository chain -> mapper -> response.
+- Write path: handler -> auth -> service -> repository chain -> mapper -> response.
 
 ## Data Flow Summary
 
@@ -38,7 +38,7 @@ Architecture style: domain modules with internal layers and shared cross-cutting
 2. Handler validates request schema and extracts bearer token.
 3. Auth Service resolves principal.
 4. Handler dispatches to target domain service.
-5. Service executes business operation with repository interfaces.
+5. Service executes business operation with repository interfaces and manages the transaction boundary directly.
 6. Result view is mapped to Firefly-compatible payload.
 7. Response is returned with standardized success or error schema.
 
@@ -52,4 +52,4 @@ Architecture style: domain modules with internal layers and shared cross-cutting
 - Security entry: Auth Service.
 - Use-case cores: Account Service, Transaction Service, Budget Service, Metadata Service.
 - Shared cross-cutting: Compatibility Mapper and Error Mapper.
-- Storage edge: Repository traits and Transaction Manager backed by PostgreSQL persistence adapters.
+- Storage edge: Repository traits and PostgreSQL persistence adapters; request-scoped transactions are owned by services.

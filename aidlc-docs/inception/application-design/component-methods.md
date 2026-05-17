@@ -77,12 +77,8 @@ fn map_auth_error(err: AuthError) -> FireflyErrorResponse;
 
 ## Persistence Component
 
-### Trait TransactionManager
-```rust
-fn in_request_tx<T, F>(work: F) -> Result<T, PersistenceError>
-where
-    F: FnOnce(&mut DbTx) -> Result<T, DomainError>;
-```
+- Request-scoped transactions are managed explicitly by application services using `sqlx::PgPool::begin()` and `sqlx::Transaction`.
+- Repository write methods receive `&mut sqlx::Transaction<'_, sqlx::Postgres>`; read methods may use either the pool or a transaction via `sqlx::Executor`.
 
 ### Repository Traits
 ```rust
