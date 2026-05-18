@@ -62,6 +62,13 @@ All error responses must conform to the `FireflyErrorResponse` structure:
 
 Note: 403 is not used; all access denial due to authentication maps to 401.
 
+**Detailed Specification:**
+For a comprehensive error handling specification aligned with Firefly III conventions, see [firefly-error-contract.md](firefly-error-contract.md). This document includes:
+- Complete error scenario matrix (9 auth scenarios, bootstrap scenarios, domain scenarios)
+- Content-Type/Accept negotiation rules
+- Message text standards and reason code formats
+- Test verification procedures
+
 ### BR-ERR-003: Validation Error Format
 For HTTP 422 responses, `errors` must map field names to arrays of error messages.
 Example:

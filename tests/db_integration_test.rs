@@ -13,6 +13,7 @@ async fn starts_ephemeral_postgres_container() {
         .await
         .expect("postgres port");
 
-    assert!(!host.is_empty());
+    let host_str = host.to_string();
+    assert!(!host_str.is_empty());
     assert!(port > 0);
 }
