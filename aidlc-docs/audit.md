@@ -469,3 +469,43 @@
 **Context**: Mandatory Code Generation approval gate.
 
 ---
+
+## CONSTRUCTION — Code Generation UOW-01 Approval Response
+**Timestamp**: 2026-05-18T11:53:58Z
+**User Input**: "承認してBuild and Testに進行します。"
+**AI Response**: Code Generation for UOW-01 approved. Transitioned to Build and Test stage.
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Build and Test Start
+**Timestamp**: 2026-05-18T11:53:58Z
+**User Input**: (stage transition)
+**AI Response**: Build and Test started. Generated instruction files for build, unit tests, integration tests, performance tests, security tests, and stage summary.
+**Context**: Build and Test execution in progress.
+
+---
+
+## CONSTRUCTION — Build and Test Completion Draft
+**Timestamp**: 2026-05-18T11:53:58Z
+**User Input**: (stage execution)
+**AI Response**: Completed build and test instruction generation in aidlc-docs/construction/build-and-test/. Updated state to Build and Test awaiting approval.
+**Context**: Build and Test stage complete; awaiting explicit approval.
+
+---
+
+## CONSTRUCTION — Build and Test Approval Prompt Log
+**Timestamp**: 2026-05-18T11:53:58Z
+**User Input**: (prompt issued by AI)
+**AI Response**: Asked: "Build and test instructions complete. Ready to proceed to Operations stage?"
+**Context**: Mandatory Build and Test approval gate.
+
+---
+
+## CONSTRUCTION — Build and Test Approval Response
+**Timestamp**: 2026-05-19T12:23:01Z
+**User Input**: "Build and Testを承認し、次のステップに進みます。"
+**AI Response**: Build and Test approved. Marked Build and Test complete, updated the stage summary, and transitioned the workflow to the Operations placeholder. No further actionable Operations stage exists in the current AI-DLC version, so the workflow is complete.
+**Context**: Build and Test approval gate passed; workflow closed at the Operations placeholder.
+
+---
