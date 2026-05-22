@@ -509,3 +509,14 @@
 **Context**: Build and Test approval gate passed; workflow closed at the Operations placeholder.
 
 ---
+
+## CONSTRUCTION — Post-Workflow Change Request
+**Timestamp**: 2026-05-19T21:56:16Z
+**User Input**: "Using AI-DLC, US-001 (List Accounts) を実装してください：
+- GET /api/v1/accounts → 認証ユーザーのアカウント一覧を Firefly-III 形式で返す
+- ページネーション・type フィルタ対応
+- aidlc-docs/construction/core-foundation/functional-design/business-rules.md に従う"
+**AI Response**: Resumed from the completed workflow state, loaded the active AI-DLC rules and core foundation business rules, then implemented US-001 by adding the accounts schema, repository query path, account service, authenticated GET /api/v1/accounts handler, Firefly-compatible account resource mapping, query validation for page/limit/type, and tests covering validation, unauthenticated access, and the paginated type-filtered success path. Validated with cargo check, cargo test, and the ignored Docker-backed integration test for the happy path.
+**Context**: Post-workflow construction change executed directly from user request while preserving AI-DLC auditability.
+
+---

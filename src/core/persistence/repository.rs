@@ -1,9 +1,11 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 use sqlx::{Executor, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::core::auth::models::{TokenRecord, UserRecord};
+use crate::core::compatibility::pagination::Paginated;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RepoError {
@@ -13,11 +15,19 @@ pub enum RepoError {
 
 #[async_trait]
 pub trait TokenReadRepository: Send + Sync {
-    async fn find_by_sha256<'c, E>(&self, executor: E, token_sha256: &str) -> Result<Option<TokenRecord>, RepoError>
+    async fn find_by_sha256<'c, E>(
+        &self,
+        executor: E,
+        token_sha256: &str,
+    ) -> Result<Option<TokenRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send;
 
-    async fn find_by_id<'c, E>(&self, executor: E, token_id: Uuid) -> Result<Option<TokenRecord>, RepoError>
+    async fn find_by_id<'c, E>(
+        &self,
+        executor: E,
+        token_id: Uuid,
+    ) -> Result<Option<TokenRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send;
 }
@@ -30,7 +40,11 @@ pub trait TokenWriteRepository: Send + Sync {
         token: &TokenRecord,
     ) -> Result<(), RepoError>;
 
-    async fn revoke_token(&self, tx: &mut Transaction<'_, Postgres>, token_id: Uuid) -> Result<(), RepoError>;
+    async fn revoke_token(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        token_id: Uuid,
+    ) -> Result<(), RepoError>;
 }
 
 #[async_trait]
@@ -47,11 +61,19 @@ pub trait TokenUpdateRepository: Send + Sync {
 
 #[async_trait]
 pub trait UserReadRepository: Send + Sync {
-    async fn find_by_id<'c, E>(&self, executor: E, user_id: Uuid) -> Result<Option<UserRecord>, RepoError>
+    async fn find_by_id<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+    ) -> Result<Option<UserRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send;
 
-    async fn find_by_email<'c, E>(&self, executor: E, email: &str) -> Result<Option<UserRecord>, RepoError>
+    async fn find_by_email<'c, E>(
+        &self,
+        executor: E,
+        email: &str,
+    ) -> Result<Option<UserRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send;
 }
@@ -75,6 +97,35 @@ pub trait BootstrapKeyRepository: Send + Sync {
     ) -> Result<bool, RepoError>;
 }
 
+#[derive(Debug, Clone)]
+pub struct AccountListFilter {
+    pub page: u32,
+    pub limit: u32,
+    pub account_type: Option<String>,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct AccountRecord {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub account_type: String,
+    pub name: String,
+    pub current_balance: Decimal,
+    pub currency_code: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[async_trait]
+pub trait AccountReadRepository: Send + Sync {
+    async fn list_by_user(
+        &self,
+        pool: &PgPool,
+        user_id: Uuid,
+        filter: &AccountListFilter,
+    ) -> Result<Paginated<AccountRecord>, RepoError>;
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct PgTokenRepository;
 
@@ -84,9 +135,16 @@ pub struct PgUserRepository;
 #[derive(Debug, Default, Clone)]
 pub struct PgBootstrapKeyRepository;
 
+#[derive(Debug, Default, Clone)]
+pub struct PgAccountRepository;
+
 #[async_trait]
 impl TokenReadRepository for PgTokenRepository {
-    async fn find_by_sha256<'c, E>(&self, executor: E, token_sha256: &str) -> Result<Option<TokenRecord>, RepoError>
+    async fn find_by_sha256<'c, E>(
+        &self,
+        executor: E,
+        token_sha256: &str,
+    ) -> Result<Option<TokenRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send,
     {
@@ -101,7 +159,11 @@ impl TokenReadRepository for PgTokenRepository {
         Ok(record)
     }
 
-    async fn find_by_id<'c, E>(&self, executor: E, token_id: Uuid) -> Result<Option<TokenRecord>, RepoError>
+    async fn find_by_id<'c, E>(
+        &self,
+        executor: E,
+        token_id: Uuid,
+    ) -> Result<Option<TokenRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send,
     {
@@ -142,7 +204,11 @@ impl TokenWriteRepository for PgTokenRepository {
         Ok(())
     }
 
-    async fn revoke_token(&self, tx: &mut Transaction<'_, Postgres>, token_id: Uuid) -> Result<(), RepoError> {
+    async fn revoke_token(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        token_id: Uuid,
+    ) -> Result<(), RepoError> {
         sqlx::query("UPDATE personal_access_tokens SET status = 'Revoked' WHERE id = $1")
             .bind(token_id)
             .execute(tx.as_mut())
@@ -175,7 +241,11 @@ impl TokenUpdateRepository for PgTokenRepository {
 
 #[async_trait]
 impl UserReadRepository for PgUserRepository {
-    async fn find_by_id<'c, E>(&self, executor: E, user_id: Uuid) -> Result<Option<UserRecord>, RepoError>
+    async fn find_by_id<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+    ) -> Result<Option<UserRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send,
     {
@@ -189,7 +259,11 @@ impl UserReadRepository for PgUserRepository {
         Ok(record)
     }
 
-    async fn find_by_email<'c, E>(&self, executor: E, email: &str) -> Result<Option<UserRecord>, RepoError>
+    async fn find_by_email<'c, E>(
+        &self,
+        executor: E,
+        email: &str,
+    ) -> Result<Option<UserRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send,
     {
@@ -245,11 +319,76 @@ impl BootstrapKeyRepository for PgBootstrapKeyRepository {
     }
 }
 
+#[async_trait]
+impl AccountReadRepository for PgAccountRepository {
+    async fn list_by_user(
+        &self,
+        pool: &PgPool,
+        user_id: Uuid,
+        filter: &AccountListFilter,
+    ) -> Result<Paginated<AccountRecord>, RepoError> {
+        let total_records = if let Some(account_type) = &filter.account_type {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM accounts WHERE user_id = $1 AND account_type = $2",
+            )
+            .bind(user_id)
+            .bind(account_type)
+            .fetch_one(pool)
+            .await?
+        } else {
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM accounts WHERE user_id = $1")
+                .bind(user_id)
+                .fetch_one(pool)
+                .await?
+        };
+
+        let offset = i64::from(filter.page.saturating_sub(1)) * i64::from(filter.limit);
+        let limit = i64::from(filter.limit);
+
+        let records = if let Some(account_type) = &filter.account_type {
+            sqlx::query_as::<_, AccountRecord>(
+                "SELECT id, user_id, account_type, name, current_balance, currency_code, created_at, updated_at \
+                 FROM accounts \
+                 WHERE user_id = $1 AND account_type = $2 \
+                 ORDER BY name ASC, id ASC \
+                 LIMIT $3 OFFSET $4",
+            )
+            .bind(user_id)
+            .bind(account_type)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?
+        } else {
+            sqlx::query_as::<_, AccountRecord>(
+                "SELECT id, user_id, account_type, name, current_balance, currency_code, created_at, updated_at \
+                 FROM accounts \
+                 WHERE user_id = $1 \
+                 ORDER BY name ASC, id ASC \
+                 LIMIT $2 OFFSET $3",
+            )
+            .bind(user_id)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?
+        };
+
+        Ok(Paginated {
+            total_records: total_records.max(0) as u64,
+            records,
+            current_page: u64::from(filter.page),
+            per_page: u64::from(filter.limit),
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Repositories {
     pub token: PgTokenRepository,
     pub user: PgUserRepository,
     pub bootstrap: PgBootstrapKeyRepository,
+    pub account: PgAccountRepository,
     pub pool: PgPool,
 }
 
@@ -259,6 +398,7 @@ impl Repositories {
             token: PgTokenRepository,
             user: PgUserRepository,
             bootstrap: PgBootstrapKeyRepository,
+            account: PgAccountRepository,
             pool,
         }
     }
