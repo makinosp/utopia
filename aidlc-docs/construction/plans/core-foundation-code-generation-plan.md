@@ -42,38 +42,42 @@ Following the approved greenfield single-package layout:
     promtail/promtail-config.yml
   migrations/
     0001_initial_schema.sql
-  src/
+    src/
     main.rs
     app.rs
     config.rs
+    core.rs
     core/
-      mod.rs
       auth/
-        mod.rs
+        auth.rs
         middleware.rs
         validator.rs
         cache.rs
         models.rs
         error.rs
+      compatibility.rs
       compatibility/
-        mod.rs
         pagination.rs
         envelope.rs
         error_response.rs
+      error_mapping.rs
       error_mapping/
-        mod.rs
         mapper.rs
+      persistence.rs
       persistence/
-        mod.rs
         db.rs
         repository.rs
-    modules/  (empty placeholder mods for UOW-02..05)
-      mod.rs
+    modules.rs  (empty placeholder mods for UOW-02..05)
+    modules/ 
+      accounts.rs
+      budgets.rs
+      metadata.rs
+      transactions.rs
+    api.rs
     api/
-      mod.rs
       router.rs
       handlers/
-        mod.rs
+        handlers.rs
         tokens.rs
   tests/
     core/
@@ -363,9 +367,9 @@ Following the approved greenfield single-package layout:
  - [x] `docker/promtail/promtail-config.yml`: ship `utopia-api` and `caddy` container logs to Loki
 - Story coverage: SECURITY-01 through SECURITY-14 infrastructure layer, deployment criteria
 
-### Step 20 — Placeholder Module Stubs (`src/modules/mod.rs`)
- - [x] Create `src/modules/mod.rs` declaring `pub mod accounts;`, `pub mod transactions;`,
-  `pub mod budgets;`, `pub mod metadata;` with empty module files
+### Step 20 — Placeholder Module Stubs (`src/modules.rs`)
+ - [x] Create `src/modules.rs` declaring `pub mod accounts;`, `pub mod transactions;`,
+  `pub mod budgets;`, `pub mod metadata;` and placeholder `src/modules/*` files
  - [x] Ensures the codebase compiles cleanly before UOW-02 starts
 - Story coverage: structural prerequisite for UOW-02 through UOW-05
 
