@@ -11,7 +11,7 @@ impl Serialize for DecimalAmount {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.0.to_string())
+        serializer.serialize_str(&format_amount(&self.0))
     }
 }
 
@@ -23,5 +23,15 @@ impl<'de> Deserialize<'de> for DecimalAmount {
         let raw = String::deserialize(deserializer)?;
         let value = Decimal::from_str(&raw).map_err(serde::de::Error::custom)?;
         Ok(Self(value))
+    }
+}
+
+fn format_amount(value: &Decimal) -> String {
+    let normalized = value.normalize().to_string();
+
+    match normalized.split_once('.') {
+        Some((_, fractional)) if fractional.len() >= 2 => normalized,
+        Some(_) => format!("{normalized}0"),
+        None => format!("{normalized}.00"),
     }
 }
