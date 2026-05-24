@@ -22,7 +22,9 @@ pub struct AppState {
 }
 
 pub async fn build_app(config: AppConfig) -> anyhow::Result<axum::Router> {
-    let pool = create_pool(&config).await.context("failed to create pg pool")?;
+    let pool = create_pool(&config)
+        .await
+        .context("failed to create pg pool")?;
     let repositories = Repositories::new(pool.clone());
     let metrics = Arc::new(PrometheusMetrics::new());
     let cache = TokenCache::new(

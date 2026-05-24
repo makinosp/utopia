@@ -12,7 +12,8 @@ use crate::core::auth::error::AuthError;
 use crate::core::auth::metrics::PrometheusMetrics;
 use crate::core::auth::models::Principal;
 use crate::core::persistence::repository::{
-    PgTokenRepository, PgUserRepository, TokenReadRepository, TokenUpdateRepository, UserReadRepository,
+    PgTokenRepository, PgUserRepository, TokenReadRepository, TokenUpdateRepository,
+    UserReadRepository,
 };
 
 pub async fn validate_bearer(
@@ -30,7 +31,10 @@ pub async fn validate_bearer(
     if let Some(cached) = cache.get(&sha256_token).await {
         match cached {
             CachedAuthResult::Valid(entry) => {
-                metrics.auth_cache_hit_total.with_label_values(&["positive"]).inc();
+                metrics
+                    .auth_cache_hit_total
+                    .with_label_values(&["positive"])
+                    .inc();
                 metrics.authenticated_requests_total.inc();
 
                 let elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
@@ -42,7 +46,10 @@ pub async fn validate_bearer(
                 });
             }
             CachedAuthResult::Invalid { reason } => {
-                metrics.auth_cache_hit_total.with_label_values(&["negative"]).inc();
+                metrics
+                    .auth_cache_hit_total
+                    .with_label_values(&["negative"])
+                    .inc();
                 metrics
                     .auth_failures_total
                     .with_label_values(&[reason.reason_code()])

@@ -104,17 +104,17 @@ mod firefly_error_contract_tests {
     #[test]
     fn test_validation_error_returns_422_with_field_errors() {
         let mut fields = std::collections::HashMap::new();
-        fields.insert("label".to_string(), vec!["The label field is required.".to_string()]);
+        fields.insert(
+            "label".to_string(),
+            vec!["The label field is required.".to_string()],
+        );
 
         let (status, response) = map_domain_error(DomainError::Validation(fields));
         assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
         assert_eq!(response.message, "The given data was invalid.");
         assert!(!response.errors.is_empty());
         assert!(response.errors.contains_key("label"));
-        assert_eq!(
-            response.errors["label"][0],
-            "The label field is required."
-        );
+        assert_eq!(response.errors["label"][0], "The label field is required.");
     }
 
     #[test]
@@ -174,7 +174,10 @@ mod firefly_error_contract_tests {
             (AuthError::DependencyFailure, "dependency_failure"),
             (AuthError::BootstrapKeyMissing, "bootstrap_key_missing"),
             (AuthError::BootstrapKeyInvalid, "bootstrap_key_invalid"),
-            (AuthError::BootstrapAlreadyUsed, "bootstrap_key_already_used"),
+            (
+                AuthError::BootstrapAlreadyUsed,
+                "bootstrap_key_already_used",
+            ),
         ];
 
         for (error, expected_code) in test_cases {
@@ -197,7 +200,10 @@ mod firefly_error_contract_tests {
         // Serialize and deserialize to ensure errors field is present in JSON
         let json = serde_json::to_value(&response).expect("Should serialize");
         assert!(json.get("errors").is_some(), "errors field must be present");
-        assert!(json.get("message").is_some(), "message field must be present");
+        assert!(
+            json.get("message").is_some(),
+            "message field must be present"
+        );
     }
 
     #[test]
@@ -209,9 +215,7 @@ mod firefly_error_contract_tests {
         );
         fields.insert(
             "type".to_string(),
-            vec![
-                "The type must be one of: asset, expense, revenue.".to_string(),
-            ],
+            vec!["The type must be one of: asset, expense, revenue.".to_string()],
         );
 
         let (status, response) = map_domain_error(DomainError::Validation(fields));

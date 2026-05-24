@@ -14,10 +14,12 @@ use crate::config::AppConfig;
 use crate::core::auth::cache::TokenCache;
 use crate::core::auth::error::AuthError;
 use crate::core::auth::metrics::PrometheusMetrics;
-use crate::core::auth::models::{Principal, TokenIssuancePayload, TokenIssuanceResponse, TokenRecord};
+use crate::core::auth::models::{
+    Principal, TokenIssuancePayload, TokenIssuanceResponse, TokenRecord,
+};
 use crate::core::persistence::repository::{
-    BootstrapKeyRepository, PgBootstrapKeyRepository, PgTokenRepository, PgUserRepository, TokenReadRepository,
-    TokenWriteRepository, UserReadRepository, UserWriteRepository,
+    BootstrapKeyRepository, PgBootstrapKeyRepository, PgTokenRepository, PgUserRepository,
+    TokenReadRepository, TokenWriteRepository, UserReadRepository, UserWriteRepository,
 };
 
 #[derive(Debug, Clone)]
@@ -68,12 +70,17 @@ impl TokenService {
             created_at: now,
         };
 
-        let mut tx = pool.begin().await.map_err(|_| AuthError::DependencyFailure)?;
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|_| AuthError::DependencyFailure)?;
         self.token_repo
             .create_token(&mut tx, &token_record)
             .await
             .map_err(|_| AuthError::DependencyFailure)?;
-        tx.commit().await.map_err(|_| AuthError::DependencyFailure)?;
+        tx.commit()
+            .await
+            .map_err(|_| AuthError::DependencyFailure)?;
 
         self.metrics.token_issue_total.inc();
 
@@ -100,7 +107,10 @@ impl TokenService {
         }
 
         let bootstrap_hash = sha256_hex(&self.config.bootstrap_key);
-        let mut tx = pool.begin().await.map_err(|_| AuthError::DependencyFailure)?;
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|_| AuthError::DependencyFailure)?;
 
         let mut principal_user = self
             .user_repo
@@ -149,7 +159,9 @@ impl TokenService {
             .await
             .map_err(|_| AuthError::DependencyFailure)?;
 
-        tx.commit().await.map_err(|_| AuthError::DependencyFailure)?;
+        tx.commit()
+            .await
+            .map_err(|_| AuthError::DependencyFailure)?;
 
         self.metrics.token_issue_total.inc();
 
@@ -171,7 +183,10 @@ impl TokenService {
         pool: &sqlx::PgPool,
         cache: &TokenCache,
     ) -> Result<(), AuthError> {
-        let mut tx = pool.begin().await.map_err(|_| AuthError::DependencyFailure)?;
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|_| AuthError::DependencyFailure)?;
         let token = self
             .token_repo
             .find_by_id(tx.as_mut(), token_id)
@@ -188,7 +203,9 @@ impl TokenService {
             .await
             .map_err(|_| AuthError::DependencyFailure)?;
 
-        tx.commit().await.map_err(|_| AuthError::DependencyFailure)?;
+        tx.commit()
+            .await
+            .map_err(|_| AuthError::DependencyFailure)?;
         cache.invalidate(&token.token_sha256).await;
         self.metrics.token_revoke_total.inc();
 

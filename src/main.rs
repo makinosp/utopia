@@ -1,7 +1,7 @@
+mod api;
 mod app;
 mod config;
 mod core;
-mod api;
 mod modules;
 
 use std::net::SocketAddr;
@@ -19,7 +19,9 @@ async fn main() -> anyhow::Result<()> {
     let config = AppConfig::from_env().context("failed to load configuration")?;
     init_tracing(&config.log_level)?;
 
-    let app = build_app(config.clone()).await.context("failed to build app")?;
+    let app = build_app(config.clone())
+        .await
+        .context("failed to build app")?;
     let addr = SocketAddr::from(([0, 0, 0, 0], config.app_port));
 
     tracing::info!(%addr, "starting server");

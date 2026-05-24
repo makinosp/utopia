@@ -20,7 +20,13 @@ pub async fn issue_token_handler(
     State(state): State<Arc<AppState>>,
     axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Json(request): Json<TokenRequest>,
-) -> Result<Json<crate::core::auth::models::TokenIssuanceResponse>, (StatusCode, Json<crate::core::compatibility::error_response::FireflyErrorResponse>)> {
+) -> Result<
+    Json<crate::core::auth::models::TokenIssuanceResponse>,
+    (
+        StatusCode,
+        Json<crate::core::compatibility::error_response::FireflyErrorResponse>,
+    ),
+> {
     let response = state
         .token_service
         .issue_token(request.label, &principal, &state.repositories.pool)
@@ -34,7 +40,13 @@ pub async fn bootstrap_issue_token_handler(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     Json(request): Json<TokenRequest>,
-) -> Result<Json<crate::core::auth::models::TokenIssuanceResponse>, (StatusCode, Json<crate::core::compatibility::error_response::FireflyErrorResponse>)> {
+) -> Result<
+    Json<crate::core::auth::models::TokenIssuanceResponse>,
+    (
+        StatusCode,
+        Json<crate::core::compatibility::error_response::FireflyErrorResponse>,
+    ),
+> {
     let bootstrap_key = headers
         .get(HeaderName::from_static("x-bootstrap-key"))
         .and_then(|value| value.to_str().ok());
@@ -52,7 +64,13 @@ pub async fn revoke_token_handler(
     State(state): State<Arc<AppState>>,
     axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Path(token_id): Path<Uuid>,
-) -> Result<StatusCode, (StatusCode, Json<crate::core::compatibility::error_response::FireflyErrorResponse>)> {
+) -> Result<
+    StatusCode,
+    (
+        StatusCode,
+        Json<crate::core::compatibility::error_response::FireflyErrorResponse>,
+    ),
+> {
     state
         .token_service
         .revoke_token(token_id, &principal, &state.repositories.pool, &state.cache)
@@ -64,7 +82,10 @@ pub async fn revoke_token_handler(
 
 fn map_auth_error_to_json(
     err: AuthError,
-) -> (StatusCode, Json<crate::core::compatibility::error_response::FireflyErrorResponse>) {
+) -> (
+    StatusCode,
+    Json<crate::core::compatibility::error_response::FireflyErrorResponse>,
+) {
     let (status, response) = map_auth_error(err);
     (status, Json(response))
 }
