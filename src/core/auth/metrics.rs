@@ -1,6 +1,8 @@
 use axum::http::{header::CONTENT_TYPE, StatusCode};
 use axum::response::{IntoResponse, Response};
-use prometheus::{Encoder, Histogram, HistogramOpts, IntCounter, IntCounterVec, Opts, Registry, TextEncoder};
+use prometheus::{
+    Encoder, Histogram, HistogramOpts, IntCounter, IntCounterVec, Opts, Registry, TextEncoder,
+};
 
 #[derive(Debug, Clone)]
 pub struct PrometheusMetrics {
@@ -44,11 +46,9 @@ impl PrometheusMetrics {
         )
         .expect("counter vec");
 
-        let auth_cache_miss_total = IntCounter::with_opts(Opts::new(
-            "auth_cache_miss_total",
-            "Auth cache miss count",
-        ))
-        .expect("counter");
+        let auth_cache_miss_total =
+            IntCounter::with_opts(Opts::new("auth_cache_miss_total", "Auth cache miss count"))
+                .expect("counter");
 
         let auth_dependency_failure_total = IntCounter::with_opts(Opts::new(
             "auth_dependency_failure_total",
@@ -56,14 +56,16 @@ impl PrometheusMetrics {
         ))
         .expect("counter");
 
-        let token_issue_total = IntCounter::with_opts(Opts::new("token_issue_total", "Issued token count"))
-            .expect("counter");
+        let token_issue_total =
+            IntCounter::with_opts(Opts::new("token_issue_total", "Issued token count"))
+                .expect("counter");
 
-        let token_revoke_total = IntCounter::with_opts(Opts::new("token_revoke_total", "Revoked token count"))
-            .expect("counter");
+        let token_revoke_total =
+            IntCounter::with_opts(Opts::new("token_revoke_total", "Revoked token count"))
+                .expect("counter");
 
-        let http_5xx_total = IntCounter::with_opts(Opts::new("http_5xx_total", "HTTP 5xx count"))
-            .expect("counter");
+        let http_5xx_total =
+            IntCounter::with_opts(Opts::new("http_5xx_total", "HTTP 5xx count")).expect("counter");
 
         for collector in [
             Box::new(auth_validation_latency_ms.clone()) as Box<dyn prometheus::core::Collector>,
