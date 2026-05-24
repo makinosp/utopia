@@ -44,6 +44,13 @@
 - aidlc-docs/construction/build-and-test/performance-test-instructions.md
 - aidlc-docs/construction/build-and-test/security-test-instructions.md
 
+## CI Automation Status
+- Phase 1 CI workflow implemented: `.github/workflows/ci-phase1.yml`
+- Required CI checks: format, clippy, debug/release build, test
+- Advisory CI check: cargo-audit (warning-only)
+- Deployment automation: not included in current phase
+- Performance workflow automation: not included in current phase
+
 ## Overall Status
 - Build: Instruction-ready
 - All tests: Pending execution

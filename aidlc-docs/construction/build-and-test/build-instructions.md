@@ -62,6 +62,29 @@ Build artifacts:
 - target/release/utopia
 - Docker image utopia-api:0.1.0
 
+## CI Execution Mapping (Phase 1)
+
+Implemented workflow:
+- `.github/workflows/ci-phase1.yml`
+
+Trigger policy:
+- pull_request: all branches
+- push: main
+- workflow_dispatch: manual
+
+Blocking checks in Phase 1:
+- `cargo fmt --all --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo build --locked`
+- `cargo build --release --locked`
+- `cargo test --locked`
+
+Advisory-only checks in Phase 1:
+- `cargo audit` (non-blocking, warning-only)
+
+Branch protection expected required check:
+- `quality-build-test`
+
 ## Troubleshooting
 
 ### Dependency Resolution Failures
