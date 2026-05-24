@@ -8,4 +8,4 @@ To provide a lightweight, self-hostable alternative to Firefly-III while maintai
 
 ## License
 
-[BSD-3-Clause](../LICENSE)
+[BSD-3-Clause](./LICENSE)
