@@ -520,3 +520,27 @@
 **Context**: Post-workflow construction change executed directly from user request while preserving AI-DLC auditability.
 
 ---
+
+## CONSTRUCTION — CI Phase 1 Policy Decision
+**Timestamp**: 2026-05-24T06:10:00Z
+**User Input**: "cargo-auditは警告運用にしましょう。"
+**AI Response**: Confirmed cargo-audit policy as advisory-only (non-blocking) for CI Phase 1 and updated planning records.
+**Context**: CI baseline policy finalization before implementation.
+
+---
+
+## CONSTRUCTION — CI Phase 1 Implementation Start
+**Timestamp**: 2026-05-24T06:14:30Z
+**User Input**: "Start implementation"
+**AI Response**: Started implementation of CI Phase 1 by creating a GitHub Actions workflow for required checks (fmt, clippy, build, tests) and advisory cargo-audit, then synchronized AI-DLC state, build/test summary, and build instructions.
+**Context**: Post-workflow enhancement implementation under AI-DLC documentation controls.
+
+---
+
+## CONSTRUCTION — CI Phase 1 Validation
+**Timestamp**: 2026-05-24T06:14:30Z
+**User Input**: (implementation validation step)
+**AI Response**: Validated workflow diagnostics with no YAML errors for `.github/workflows/ci-phase1.yml`. Ran `cargo fmt --all --check` and detected existing formatting drift in current source files, so repository-level format check is currently failing.
+**Context**: CI baseline validation executed and outcomes recorded.
+
+---

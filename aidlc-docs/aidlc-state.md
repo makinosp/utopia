@@ -40,3 +40,7 @@
 
 ### 🟡 OPERATIONS PHASE
 - [x] Operations — SKIPPED (PLACEHOLDER; no actionable stage is defined in the current AI-DLC version)
+
+## Post-Workflow Enhancements
+- [x] CI Phase 1 Implementation — COMPLETED (GitHub Actions baseline at `.github/workflows/ci-phase1.yml`)
+- [ ] CI Phase 2 Hardening — NOT STARTED
