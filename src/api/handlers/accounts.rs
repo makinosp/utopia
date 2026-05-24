@@ -25,7 +25,10 @@ pub async fn list_accounts_handler(
     State(state): State<Arc<AppState>>,
     axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Query(request): Query<AccountListRequest>,
-) -> Result<Json<FireflyListEnvelope<FireflyAccountResource>>, (StatusCode, Json<FireflyErrorResponse>)> {
+) -> Result<
+    Json<FireflyListEnvelope<FireflyAccountResource>>,
+    (StatusCode, Json<FireflyErrorResponse>),
+> {
     let query = AccountListQuery::from_params(
         request.page.as_deref(),
         request.limit.as_deref(),
@@ -53,9 +56,7 @@ pub async fn list_accounts_handler(
     Ok(Json(response))
 }
 
-fn map_domain_error_to_json(
-    err: DomainError,
-) -> (StatusCode, Json<FireflyErrorResponse>) {
+fn map_domain_error_to_json(err: DomainError) -> (StatusCode, Json<FireflyErrorResponse>) {
     let (status, response) = map_domain_error(err);
     (status, Json(response))
 }

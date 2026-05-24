@@ -67,7 +67,9 @@ fn rejects_limit_greater_than_maximum() {
         DomainError::Validation(fields) => {
             assert_eq!(
                 fields.get("limit"),
-                Some(&vec!["The limit field may not be greater than 100.".to_string()])
+                Some(&vec![
+                    "The limit field may not be greater than 100.".to_string()
+                ])
             );
         }
         other => panic!("expected validation error, got {other:?}"),
