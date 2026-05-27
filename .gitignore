@@ -29,7 +29,6 @@ lcov.info
 doc/
 
 # IDEs and editors
-.vscode/
 .idea/
 *.sublime-workspace
 
