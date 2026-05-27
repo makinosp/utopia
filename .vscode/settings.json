@@ -1,0 +1,21 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "/^cargo (fmt|clippy|build|test|check)(\\b.*)?$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^git (status|diff|show)(\\b.*)?$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^pwd(\\b.*)?$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^ls(\\b.*)?$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  },
+  "chat.tools.terminal.blockDetectedFileWrites": "outsideWorkspace"
+}

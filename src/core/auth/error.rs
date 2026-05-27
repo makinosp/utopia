@@ -45,7 +45,8 @@ impl AuthError {
 
 impl Display for AuthError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.description())
+        let description = self.description();
+        write!(f, "{description}")
     }
 }
 

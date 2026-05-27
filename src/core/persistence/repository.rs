@@ -107,6 +107,7 @@ pub struct AccountListFilter {
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct AccountRecord {
     pub id: Uuid,
+    #[allow(dead_code)]
     pub user_id: Uuid,
     pub account_type: String,
     pub name: String,

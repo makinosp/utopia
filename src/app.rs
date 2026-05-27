@@ -13,6 +13,7 @@ use crate::core::persistence::repository::Repositories;
 
 #[derive(Clone)]
 pub struct AppState {
+    #[allow(dead_code)]
     pub config: AppConfig,
     pub repositories: Repositories,
     pub cache: TokenCache,

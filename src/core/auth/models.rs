@@ -18,22 +18,6 @@ pub struct UserRecord {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
-#[sqlx(type_name = "TEXT")]
-pub enum TokenStatus {
-    Active,
-    Revoked,
-}
-
-impl TokenStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Active => "Active",
-            Self::Revoked => "Revoked",
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct TokenRecord {
     pub id: Uuid,

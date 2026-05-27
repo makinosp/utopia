@@ -94,7 +94,8 @@ proptest! {
     #[test]
     fn normalizes_supported_type_filters(type_index in 0usize..SUPPORTED_ACCOUNT_TYPES.len()) {
         let expected = SUPPORTED_ACCOUNT_TYPES[type_index];
-        let raw = format!("  {}  ", expected.to_ascii_uppercase());
+        let expected_upper = expected.to_ascii_uppercase();
+        let raw = format!("  {expected_upper}  ");
 
         let query = AccountListQuery::from_params(None, None, Some(&raw))
             .expect("supported type filter");
