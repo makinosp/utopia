@@ -39,7 +39,7 @@ B) Core set: "asset", "expense", "revenue", and "liability" accounts
 C) Full set: exact coverage of all Firefly-III account types (including cash, credit card, etc.)
 D) Other (please describe)
 
-[Answer]: B
+[Answer]: C
 
 ### Question 2: Balance Tracking & Calculation Strategy
 
@@ -61,7 +61,9 @@ B) Hard delete with cascade delete of all associated transactions (automatically
 C) Soft delete (`deleted_at` timestamp) to preserve financial ledger integrity even if hidden from UI
 D) Other (please describe)
 
-[Answer]: A
+[Answer]: D
+
+Note: The inception-level account requirements only define the delete endpoint outcome (204 on success, 404 when missing or unauthorized). They do not specify whether account history is soft-deleted, hard-deleted, or migrated, so this answer intentionally fills that gap with a Firefly-III-compatible hybrid policy.
 
 ### Question 4: Default Currency Handling
 
@@ -72,7 +74,7 @@ B) Fallback to a single global default currency (e.g. USD / JPY) if not defined
 C) Context-derived default based on user preferences in their principal context
 D) Other (please describe)
 
-[Answer]: B
+[Answer]: C
 
 ### Question 5: Firefly-III JSON Compatibility Level
 
