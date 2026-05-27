@@ -195,10 +195,7 @@ async fn start_postgres() -> TestDatabase {
         .get_host_port_ipv4(5432)
         .await
         .expect("postgres port");
-    let database_url = format!(
-        "postgres://postgres:postgres@{}:{}/postgres?sslmode=disable",
-        host, port
-    );
+    let database_url = format!("postgres://postgres:postgres@{host}:{port}/postgres?sslmode=disable");
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
