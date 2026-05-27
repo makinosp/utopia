@@ -108,7 +108,6 @@ pub async fn validate_bearer(
             TokenCacheEntry {
                 user_id: principal.user_id,
                 email: principal.email.clone(),
-                token_status: token_record.status,
             },
         )
         .await;

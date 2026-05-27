@@ -15,6 +15,7 @@ pub struct PrometheusMetrics {
     pub auth_dependency_failure_total: IntCounter,
     pub token_issue_total: IntCounter,
     pub token_revoke_total: IntCounter,
+    #[allow(dead_code)]
     pub http_5xx_total: IntCounter,
 }
 
@@ -101,6 +102,12 @@ impl PrometheusMetrics {
         let mut buffer = Vec::new();
         encoder.encode(&metric_families, &mut buffer)?;
         Ok(String::from_utf8_lossy(&buffer).to_string())
+    }
+}
+
+impl Default for PrometheusMetrics {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -10,7 +10,6 @@ use crate::core::auth::error::AuthError;
 pub struct TokenCacheEntry {
     pub user_id: Uuid,
     pub email: String,
-    pub token_status: String,
 }
 
 #[derive(Debug, Clone)]
