@@ -1,31 +1,15 @@
-/// Firefly Error Compatibility Tests
-///
-/// These tests verify that error responses conform to the Firefly III API contract
-/// defined in aidlc-docs/construction/core-foundation/functional-design/firefly-error-contract.md
+// Firefly Error Compatibility Tests
+//
+// These tests verify that error responses conform to the Firefly III API contract
+// defined in aidlc-docs/construction/core-foundation/functional-design/firefly-error-contract.md
 
 #[cfg(test)]
 mod firefly_error_contract_tests {
     use axum::http::StatusCode;
-    use serde_json::json;
 
     use utopia::core::auth::error::AuthError;
     use utopia::core::compatibility::error_response::FireflyErrorResponse;
     use utopia::core::error_mapping::mapper::{map_auth_error, map_domain_error, DomainError};
-
-    #[derive(Debug)]
-    struct ErrorContractTestCase {
-        name: &'static str,
-        error_source: ErrorSource,
-        expected_status: StatusCode,
-        expected_message_contains: &'static str,
-        expected_errors_empty: bool,
-    }
-
-    #[derive(Debug)]
-    enum ErrorSource {
-        Auth(AuthError),
-        Domain(DomainError),
-    }
 
     // Authentication Layer Test Cases (HTTP 401)
     #[test]

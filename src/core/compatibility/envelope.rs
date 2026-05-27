@@ -17,6 +17,7 @@ where
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[allow(dead_code)]
 pub struct FireflySingleEnvelope<T>
 where
     T: Serialize,
