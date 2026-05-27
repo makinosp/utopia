@@ -31,7 +31,8 @@ pub fn map_domain_error(err: DomainError) -> (StatusCode, FireflyErrorResponse) 
 
 pub fn map_auth_error(err: AuthError) -> (StatusCode, FireflyErrorResponse) {
     let reason = err.reason_code();
-    let message = format!("{}: {}", reason, err.description());
+    let description = err.description();
+    let message = format!("{reason}: {description}");
     (StatusCode::UNAUTHORIZED, FireflyErrorResponse::new(message))
 }
 

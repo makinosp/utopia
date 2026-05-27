@@ -170,7 +170,7 @@ mod firefly_error_contract_tests {
 
             let (_, response) = map_auth_error(error);
             assert!(
-                response.message.starts_with(&format!("{}:", expected_code)),
+                response.message.starts_with(&format!("{expected_code}:")),
                 "Message should start with reason code: {}",
                 response.message
             );
