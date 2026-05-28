@@ -43,8 +43,8 @@
 #### UOW-02 Accounts Module (IN PROGRESS)
 - [x] Functional Design — COMPLETED
 - [x] NFR Requirements — COMPLETED
-- [/] NFR Design — IN PROGRESS
-- [ ] Infrastructure Design — NOT STARTED
+- [x] NFR Design — COMPLETED
+- [x] Infrastructure Design — COMPLETED
 - [ ] Code Generation — NOT STARTED
 - [ ] Build and Test — NOT STARTED
 
