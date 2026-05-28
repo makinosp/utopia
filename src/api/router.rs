@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use axum::http::HeaderValue;
 use axum::middleware;
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, get, post, put};
 use axum::Router;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::set_header::SetResponseHeaderLayer;
 
-use crate::api::handlers::accounts::list_accounts_handler;
+use crate::api::handlers::accounts::{
+    create_account_handler, delete_account_handler, get_account_handler, list_accounts_handler,
+    update_account_handler,
+};
 use crate::api::handlers::tokens::{
     bootstrap_issue_token_handler, issue_token_handler, revoke_token_handler,
 };
@@ -19,6 +22,10 @@ use crate::core::auth::middleware::auth_middleware;
 pub fn build_router(state: Arc<AppState>) -> Router {
     let protected = Router::new()
         .route("/api/v1/accounts", get(list_accounts_handler))
+        .route("/api/v1/accounts", post(create_account_handler))
+        .route("/api/v1/accounts/:id", get(get_account_handler))
+        .route("/api/v1/accounts/:id", put(update_account_handler))
+        .route("/api/v1/accounts/:id", delete(delete_account_handler))
         .route("/api/v1/tokens", post(issue_token_handler))
         .route("/api/v1/tokens/:id", delete(revoke_token_handler))
         .route_layer(middleware::from_fn_with_state(
