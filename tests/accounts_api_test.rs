@@ -56,6 +56,7 @@ async fn lists_accounts_in_firefly_format_with_pagination_and_type_filter() {
     let app = build_router(state.clone());
 
     let user = create_user(&test_db.pool, "maya@example.com").await;
+    set_user_primary_currency(&test_db.pool, user.id, "USD").await;
     let other_user = create_user(&test_db.pool, "other@example.com").await;
     let principal = Principal {
         user_id: user.id,
@@ -142,6 +143,25 @@ async fn lists_accounts_in_firefly_format_with_pagination_and_type_filter() {
     );
     assert_eq!(account["attributes"]["currency_symbol"], json!("¥"));
     assert_eq!(account["attributes"]["currency_decimal_places"], json!(2));
+    assert_eq!(account["attributes"]["primary_currency_code"], json!("USD"));
+    assert_eq!(
+        account["attributes"]["primary_currency_name"],
+        json!("US Dollar")
+    );
+    assert_eq!(account["attributes"]["primary_currency_symbol"], json!("$"));
+    assert_eq!(
+        account["attributes"]["primary_currency_decimal_places"],
+        json!(2)
+    );
+    assert!(
+        account["attributes"]["current_balance_date"]
+            .as_str()
+            .unwrap()
+            .len()
+            > 0
+    );
+    assert!(account["attributes"]["order"].is_null());
+    assert_eq!(account["links"][0]["rel"], json!("self"));
 }
 
 #[tokio::test]
@@ -153,6 +173,7 @@ async fn creates_account_and_returns_201_with_firefly_envelope() {
     let app = build_router(state.clone());
 
     let user = create_user(&test_db.pool, "alice@example.com").await;
+    set_user_primary_currency(&test_db.pool, user.id, "USD").await;
     let principal = Principal {
         user_id: user.id,
         email: user.email.clone(),
@@ -169,7 +190,6 @@ async fn creates_account_and_returns_201_with_firefly_envelope() {
         "name": "My Checking",
         "type": "asset",
         "account_role": "defaultAsset",
-        "currency_code": "JPY",
         "opening_balance": "50000.00",
         "opening_balance_date": "2026-01-01T00:00:00Z",
         "notes": "Main checking account"
@@ -201,13 +221,20 @@ async fn creates_account_and_returns_201_with_firefly_envelope() {
     let attrs = &payload["data"]["attributes"];
     assert_eq!(attrs["name"], json!("My Checking"));
     assert_eq!(attrs["type"], json!("asset"));
-    assert_eq!(attrs["currency_code"], json!("JPY"));
+    assert_eq!(attrs["currency_code"], json!("USD"));
     assert_eq!(attrs["active"], json!(true));
     assert_eq!(attrs["include_net_worth"], json!(true));
     assert_eq!(attrs["account_role"], json!("defaultAsset"));
     assert_eq!(attrs["notes"], json!("Main checking account"));
     assert!(attrs["created_at"].as_str().unwrap().len() > 0);
     assert!(attrs["updated_at"].as_str().unwrap().len() > 0);
+    assert_eq!(attrs["primary_currency_code"], json!("USD"));
+    assert_eq!(attrs["primary_currency_name"], json!("US Dollar"));
+    assert_eq!(attrs["primary_currency_symbol"], json!("$"));
+    assert_eq!(attrs["primary_currency_decimal_places"], json!(2));
+    assert!(attrs["current_balance_date"].as_str().unwrap().len() > 0);
+    assert!(attrs["order"].is_null());
+    assert_eq!(payload["data"]["links"][0]["rel"], json!("self"));
 
     // Verify parsable ID for subsequent tests
     let account_id = payload["data"]["id"].as_str().unwrap().to_string();
@@ -518,12 +545,25 @@ async fn start_postgres() -> TestDatabase {
 
 async fn create_user(pool: &sqlx::PgPool, email: &str) -> UserRecord {
     sqlx::query_as::<_, UserRecord>(
-        "INSERT INTO users (email) VALUES ($1) RETURNING id, email, blocked, created_at, updated_at",
+        "INSERT INTO users (email) VALUES ($1) RETURNING id, email, blocked, primary_currency_code, created_at, updated_at",
     )
     .bind(email)
     .fetch_one(pool)
     .await
     .expect("create user")
+}
+
+async fn set_user_primary_currency(
+    pool: &sqlx::PgPool,
+    user_id: uuid::Uuid,
+    primary_currency_code: &str,
+) {
+    sqlx::query("UPDATE users SET primary_currency_code = $1 WHERE id = $2")
+        .bind(primary_currency_code)
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("update primary currency");
 }
 
 async fn seed_account(

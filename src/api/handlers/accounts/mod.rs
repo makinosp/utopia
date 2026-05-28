@@ -20,10 +20,23 @@ use crate::core::compatibility::envelope::{FireflyListEnvelope, FireflySingleEnv
 use crate::core::compatibility::error_response::FireflyErrorResponse;
 use crate::core::compatibility::pagination::Paginated;
 use crate::core::error_mapping::mapper::{map_domain_error, DomainError};
+use crate::core::persistence::repository::UserReadRepository;
 use crate::modules::accounts::{
     AccountListQuery, AccountService, CreateAccountRequest, FireflyAccountResource,
     UpdateAccountRequest,
 };
+
+async fn primary_currency_code(state: &Arc<AppState>, principal: &Principal) -> String {
+    match state
+        .repositories
+        .user
+        .find_by_id(&state.repositories.pool, principal.user_id)
+        .await
+    {
+        Ok(Some(user)) => user.primary_currency_code,
+        _ => "JPY".to_string(),
+    }
+}
 
 pub async fn list_accounts_handler(
     State(state): State<Arc<AppState>>,
@@ -33,6 +46,7 @@ pub async fn list_accounts_handler(
     Json<FireflyListEnvelope<FireflyAccountResource>>,
     (StatusCode, Json<FireflyErrorResponse>),
 > {
+    let primary_currency_code = primary_currency_code(&state, &principal).await;
     let query = AccountListQuery::from_params(
         request.page.as_deref(),
         request.limit.as_deref(),
@@ -51,7 +65,7 @@ pub async fn list_accounts_handler(
         records: result
             .records
             .into_iter()
-            .map(FireflyAccountResource::from)
+            .map(|record| FireflyAccountResource::from_view(record, &primary_currency_code))
             .collect(),
         current_page: result.current_page,
         per_page: result.per_page,
@@ -68,6 +82,7 @@ pub async fn get_account_handler(
     Json<FireflySingleEnvelope<FireflyAccountResource>>,
     (StatusCode, Json<FireflyErrorResponse>),
 > {
+    let primary_currency_code = primary_currency_code(&state, &principal).await;
     let service = AccountService::new(state.repositories.account.clone());
     let result = service
         .get_account(account_id, &principal, &state.repositories.pool)
@@ -75,7 +90,7 @@ pub async fn get_account_handler(
         .map_err(map_domain_error_to_json)?;
 
     Ok(Json(FireflySingleEnvelope {
-        data: FireflyAccountResource::from(result),
+        data: FireflyAccountResource::from_view(result, &primary_currency_code),
     }))
 }
 
@@ -90,6 +105,12 @@ pub async fn create_account_handler(
     ),
     (StatusCode, Json<FireflyErrorResponse>),
 > {
+    let primary_currency_code = primary_currency_code(&state, &principal).await;
+    let mut request = request;
+    if request.currency_code.is_none() {
+        request.currency_code = Some(primary_currency_code.clone());
+    }
+
     let service = AccountService::new(state.repositories.account.clone());
     let result = service
         .create_account(request, &principal, &state.repositories.pool)
@@ -99,7 +120,7 @@ pub async fn create_account_handler(
     Ok((
         StatusCode::CREATED,
         Json(FireflySingleEnvelope {
-            data: FireflyAccountResource::from(result),
+            data: FireflyAccountResource::from_view(result, &primary_currency_code),
         }),
     ))
 }
@@ -113,6 +134,7 @@ pub async fn update_account_handler(
     Json<FireflySingleEnvelope<FireflyAccountResource>>,
     (StatusCode, Json<FireflyErrorResponse>),
 > {
+    let primary_currency_code = primary_currency_code(&state, &principal).await;
     let service = AccountService::new(state.repositories.account.clone());
     let result = service
         .update_account(account_id, request, &principal, &state.repositories.pool)
@@ -120,7 +142,7 @@ pub async fn update_account_handler(
         .map_err(map_domain_error_to_json)?;
 
     Ok(Json(FireflySingleEnvelope {
-        data: FireflyAccountResource::from(result),
+        data: FireflyAccountResource::from_view(result, &primary_currency_code),
     }))
 }
 

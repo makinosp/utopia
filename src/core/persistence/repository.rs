@@ -359,7 +359,7 @@ impl UserReadRepository for PgUserRepository {
         E: Executor<'c, Database = Postgres> + Send,
     {
         let record = sqlx::query_as::<_, UserRecord>(
-            "SELECT id, email, blocked, created_at, updated_at FROM users WHERE id = $1",
+            "SELECT id, email, blocked, primary_currency_code, created_at, updated_at FROM users WHERE id = $1",
         )
         .bind(user_id)
         .fetch_optional(executor)
@@ -377,7 +377,7 @@ impl UserReadRepository for PgUserRepository {
         E: Executor<'c, Database = Postgres> + Send,
     {
         let record = sqlx::query_as::<_, UserRecord>(
-            "SELECT id, email, blocked, created_at, updated_at FROM users WHERE email = $1",
+            "SELECT id, email, blocked, primary_currency_code, created_at, updated_at FROM users WHERE email = $1",
         )
         .bind(email)
         .fetch_optional(executor)
@@ -396,7 +396,7 @@ impl UserWriteRepository for PgUserRepository {
     ) -> Result<UserRecord, RepoError> {
         let record = sqlx::query_as::<_, UserRecord>(
             "INSERT INTO users (email) VALUES ($1) \
-             RETURNING id, email, blocked, created_at, updated_at",
+               RETURNING id, email, blocked, primary_currency_code, created_at, updated_at",
         )
         .bind(email)
         .fetch_one(tx.as_mut())

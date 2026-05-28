@@ -28,6 +28,7 @@ const ALLOWED_ACCOUNT_TYPES: &[&str] = &[
     "hidden",
     "liability",
     "liabilities",
+    "credit card",
     "default account",
     "cash account",
     "asset account",
@@ -194,11 +195,17 @@ pub struct FireflyAccountAttributes {
     pub current_balance: DecimalAmount,
     // Phase 1 extended attributes
     pub active: bool,
+    pub order: Option<i32>,
     pub currency_name: Option<String>,
     pub currency_symbol: Option<String>,
     pub currency_decimal_places: i32,
+    pub primary_currency_code: String,
+    pub primary_currency_name: String,
+    pub primary_currency_symbol: String,
+    pub primary_currency_decimal_places: i32,
     pub initial_balance: Option<DecimalAmount>,
     pub virtual_balance: Option<DecimalAmount>,
+    pub current_balance_date: DateTime<Utc>,
     pub notes: Option<String>,
     pub iban: Option<String>,
     pub bic: Option<String>,
@@ -211,6 +218,8 @@ pub struct FireflyAccountAttributes {
     pub liability_direction: Option<String>,
     pub interest: Option<String>,
     pub interest_period: Option<String>,
+    pub credit_card_type: Option<String>,
+    pub monthly_payment_date: Option<String>,
 }
 
 impl Default for FireflyAccountAttributes {
@@ -223,11 +232,17 @@ impl Default for FireflyAccountAttributes {
             currency_code: String::new(),
             current_balance: DecimalAmount(Decimal::ZERO),
             active: true,
+            order: None,
             currency_name: None,
             currency_symbol: None,
             currency_decimal_places: 2,
+            primary_currency_code: String::new(),
+            primary_currency_name: String::new(),
+            primary_currency_symbol: String::new(),
+            primary_currency_decimal_places: 2,
             initial_balance: None,
             virtual_balance: None,
+            current_balance_date: Utc::now(),
             notes: None,
             iban: None,
             bic: None,
@@ -240,8 +255,16 @@ impl Default for FireflyAccountAttributes {
             liability_direction: None,
             interest: None,
             interest_period: None,
+            credit_card_type: None,
+            monthly_payment_date: None,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct FireflyLink {
+    pub rel: String,
+    pub uri: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -250,12 +273,15 @@ pub struct FireflyAccountResource {
     pub resource_type: String,
     pub id: String,
     pub attributes: FireflyAccountAttributes,
+    pub links: Vec<FireflyLink>,
 }
 
-impl From<AccountView> for FireflyAccountResource {
-    fn from(view: AccountView) -> Self {
+impl FireflyAccountResource {
+    pub fn from_view(view: AccountView, primary_currency_code: &str) -> Self {
         let currency_symbol = currency_symbol_from_code(&view.currency_code);
         let currency_name = currency_name_from_code(&view.currency_code);
+        let primary_currency_symbol = currency_symbol_from_code(primary_currency_code);
+        let primary_currency_name = currency_name_from_code(primary_currency_code);
 
         Self {
             resource_type: "accounts".to_string(),
@@ -268,11 +294,17 @@ impl From<AccountView> for FireflyAccountResource {
                 currency_code: view.currency_code.clone(),
                 current_balance: DecimalAmount(view.current_balance),
                 active: view.active,
+                order: view.order,
                 currency_name: Some(currency_name),
                 currency_symbol: Some(currency_symbol),
                 currency_decimal_places: 2,
+                primary_currency_code: primary_currency_code.to_string(),
+                primary_currency_name,
+                primary_currency_symbol,
+                primary_currency_decimal_places: 2,
                 initial_balance: Some(DecimalAmount(view.initial_balance)),
                 virtual_balance: Some(DecimalAmount(view.virtual_balance)),
+                current_balance_date: view.updated_at,
                 notes: view.notes,
                 iban: view.iban,
                 bic: view.bic,
@@ -285,8 +317,20 @@ impl From<AccountView> for FireflyAccountResource {
                 liability_direction: view.liability_direction,
                 interest: view.interest,
                 interest_period: view.interest_period,
+                credit_card_type: view.cc_type,
+                monthly_payment_date: view.cc_monthly_payment_date,
             },
+            links: vec![FireflyLink {
+                rel: "self".to_string(),
+                uri: format!("/api/v1/accounts/{}", view.id),
+            }],
         }
+    }
+}
+
+impl From<AccountView> for FireflyAccountResource {
+    fn from(view: AccountView) -> Self {
+        Self::from_view(view, "JPY")
     }
 }
 
