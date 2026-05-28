@@ -41,8 +41,8 @@
 - [x] Build and Test — COMPLETED
 
 #### UOW-02 Accounts Module (IN PROGRESS)
-- [/] Functional Design — IN PROGRESS
-- [ ] NFR Requirements — NOT STARTED
+- [x] Functional Design — COMPLETED
+- [x] NFR Requirements — COMPLETED
 - [ ] NFR Design — NOT STARTED
 - [ ] Infrastructure Design — NOT STARTED
 - [ ] Code Generation — NOT STARTED
