@@ -8,7 +8,7 @@ use utopia::core::error_mapping::mapper::{map_auth_error, map_domain_error, Doma
 fn maps_not_found_to_404() {
     let (status, body) = map_domain_error(DomainError::NotFound);
     assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(body.message, "Not found.");
+    assert_eq!(body.message, "Not Found");
 }
 
 #[test]

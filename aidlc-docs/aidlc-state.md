@@ -40,13 +40,13 @@
 - [x] Code Generation — COMPLETED
 - [x] Build and Test — COMPLETED
 
-#### UOW-02 Accounts Module (IN PROGRESS)
+#### UOW-02 Accounts Module (COMPLETE)
 - [x] Functional Design — COMPLETED
 - [x] NFR Requirements — COMPLETED
 - [x] NFR Design — COMPLETED
 - [x] Infrastructure Design — COMPLETED
 - [x] Code Generation — COMPLETED
-- [ ] Build and Test — NOT STARTED
+- [x] Build and Test — COMPLETED
 
 ### 🟡 OPERATIONS PHASE
 - [x] Operations — SKIPPED (PLACEHOLDER; no actionable stage is defined in the current AI-DLC version)
