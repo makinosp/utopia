@@ -26,16 +26,18 @@ use crate::modules::accounts::{
     UpdateAccountRequest,
 };
 
-async fn primary_currency_code(state: &Arc<AppState>, principal: &Principal) -> String {
-    match state
+async fn primary_currency_code(
+    state: &Arc<AppState>,
+    principal: &Principal,
+) -> Result<String, DomainError> {
+    state
         .repositories
         .user
         .find_by_id(&state.repositories.pool, principal.user_id)
         .await
-    {
-        Ok(Some(user)) => user.primary_currency_code,
-        _ => "JPY".to_string(),
-    }
+        .map_err(|_| DomainError::Persistence)?
+        .map(|user| user.primary_currency_code)
+        .ok_or(DomainError::NotFound)
 }
 
 pub async fn list_accounts_handler(
@@ -46,7 +48,9 @@ pub async fn list_accounts_handler(
     Json<FireflyListEnvelope<FireflyAccountResource>>,
     (StatusCode, Json<FireflyErrorResponse>),
 > {
-    let primary_currency_code = primary_currency_code(&state, &principal).await;
+    let primary_currency_code = primary_currency_code(&state, &principal)
+        .await
+        .map_err(map_domain_error_to_json)?;
     let query = AccountListQuery::from_params(
         request.page.as_deref(),
         request.limit.as_deref(),
@@ -82,7 +86,9 @@ pub async fn get_account_handler(
     Json<FireflySingleEnvelope<FireflyAccountResource>>,
     (StatusCode, Json<FireflyErrorResponse>),
 > {
-    let primary_currency_code = primary_currency_code(&state, &principal).await;
+    let primary_currency_code = primary_currency_code(&state, &principal)
+        .await
+        .map_err(map_domain_error_to_json)?;
     let service = AccountService::new(state.repositories.account.clone());
     let result = service
         .get_account(account_id, &principal, &state.repositories.pool)
@@ -105,7 +111,9 @@ pub async fn create_account_handler(
     ),
     (StatusCode, Json<FireflyErrorResponse>),
 > {
-    let primary_currency_code = primary_currency_code(&state, &principal).await;
+    let primary_currency_code = primary_currency_code(&state, &principal)
+        .await
+        .map_err(map_domain_error_to_json)?;
     let mut request = request;
     if request.currency_code.is_none() {
         request.currency_code = Some(primary_currency_code.clone());
@@ -134,7 +142,9 @@ pub async fn update_account_handler(
     Json<FireflySingleEnvelope<FireflyAccountResource>>,
     (StatusCode, Json<FireflyErrorResponse>),
 > {
-    let primary_currency_code = primary_currency_code(&state, &principal).await;
+    let primary_currency_code = primary_currency_code(&state, &principal)
+        .await
+        .map_err(map_domain_error_to_json)?;
     let service = AccountService::new(state.repositories.account.clone());
     let result = service
         .update_account(account_id, request, &principal, &state.repositories.pool)

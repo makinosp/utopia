@@ -102,6 +102,7 @@ pub struct UpdateAccountRequest {
     pub iban: Option<Option<String>>,
     pub bic: Option<Option<String>>,
     pub account_number: Option<Option<String>>,
+    #[allow(dead_code)]
     pub opening_balance: Option<Option<Decimal>>,
     pub opening_balance_date: Option<Option<DateTime<Utc>>>,
     pub virtual_balance: Option<Decimal>,
@@ -130,6 +131,7 @@ pub struct AccountView {
     pub initial_balance: Decimal,
     pub initial_balance_date: Option<DateTime<Utc>>,
     pub virtual_balance: Decimal,
+    #[allow(dead_code)]
     pub deleted_at: Option<DateTime<Utc>>,
     pub iban: Option<String>,
     pub bic: Option<String>,
@@ -144,6 +146,7 @@ pub struct AccountView {
     pub interest_period: Option<String>,
     pub cc_type: Option<String>,
     pub cc_monthly_payment_date: Option<String>,
+    #[allow(dead_code)]
     pub opening_balance_date: Option<DateTime<Utc>>,
 }
 
@@ -535,7 +538,9 @@ impl AccountService {
         pool: &PgPool,
     ) -> Result<AccountView, DomainError> {
         let normalized_type = normalize_account_type_create(&req.account_type)?;
-        let currency_code = req.currency_code.unwrap_or_else(|| "JPY".to_string());
+        let currency_code = req.currency_code.ok_or_else(|| {
+            validation_error("currency_code", "The currency code field is required.")
+        })?;
         let opening_balance = req.opening_balance.unwrap_or(Decimal::ZERO);
         let opening_balance_date = req.opening_balance_date;
         let virtual_balance = req.virtual_balance.unwrap_or(Decimal::ZERO);
@@ -634,7 +639,7 @@ impl AccountService {
         Ok(AccountView::from(record))
     }
 
-    /// Soft-delete an account (hide from API, preserve data).
+    /// Delete an account.
     pub async fn delete_account(
         &self,
         account_id: Uuid,
@@ -652,7 +657,7 @@ impl AccountService {
 
         let deleted = self
             .write_repo
-            .soft_delete(&mut tx, account_id, principal.user_id)
+            .hard_delete(&mut tx, account_id, principal.user_id)
             .await
             .map_err(|_| DomainError::Persistence)?;
 

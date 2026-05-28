@@ -220,13 +220,6 @@ pub trait AccountWriteRepository: Send + Sync {
         opening_balance_date: Option<Option<DateTime<Utc>>>,
     ) -> Result<AccountRecord, RepoError>;
 
-    async fn soft_delete(
-        &self,
-        tx: &mut Transaction<'_, Postgres>,
-        account_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<bool, RepoError>;
-
     async fn hard_delete(
         &self,
         tx: &mut Transaction<'_, Postgres>,
@@ -760,25 +753,6 @@ impl AccountWriteRepository for PgAccountRepository {
             .await?;
 
         record.ok_or(RepoError::Database(sqlx::Error::RowNotFound))
-    }
-
-    async fn soft_delete(
-        &self,
-        tx: &mut Transaction<'_, Postgres>,
-        account_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<bool, RepoError> {
-        let rows = sqlx::query(
-            "UPDATE accounts SET deleted_at = NOW() \
-             WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL",
-        )
-        .bind(account_id)
-        .bind(user_id)
-        .execute(tx.as_mut())
-        .await?
-        .rows_affected();
-
-        Ok(rows > 0)
     }
 
     async fn hard_delete(
