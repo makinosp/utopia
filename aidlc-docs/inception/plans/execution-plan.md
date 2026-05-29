@@ -26,9 +26,9 @@ flowchart TD
         WD["Workspace Detection\n**COMPLETED**"]
         RA["Requirements Analysis\n**COMPLETED**"]
         US["User Stories\n**COMPLETED**"]
-        WP["Workflow Planning\n**IN PROGRESS**"]
-        AD["Application Design\n**EXECUTE**"]
-        UG["Units Generation\n**EXECUTE**"]
+        WP["Workflow Planning\n**COMPLETED**"]
+        AD["Application Design\n**COMPLETED**"]
+        UG["Units Generation\n**COMPLETED**"]
     end
 
     subgraph CONSTRUCTION["🟢 CONSTRUCTION PHASE"]
@@ -96,23 +96,20 @@ flowchart TD
 
 ### 🟢 CONSTRUCTION PHASE (per-unit loop)
 
-- [ ] Functional Design — **EXECUTE**
-  - **Rationale**: New financial data models (monetary amounts, transaction types, account types) and domain business rules require precise schema and logic definition before code generation.
-- [ ] NFR Requirements — **EXECUTE**
-  - **Rationale**: Security extension (blocking) is active. PBT extension (partial) is active. NFR requirements must be explicitly assessed per unit to enforce security-by-default and PBT coverage on monetary calculations.
-- [ ] NFR Design — **EXECUTE**
-  - **Rationale**: Follows from NFR Requirements execution. Security patterns (token validation, authorization scoping), monetary arithmetic design, and PBT target selection must be designed before code generation.
-- [ ] Infrastructure Design — **EXECUTE**
-  - **Rationale**: Rust binary deployment for self-hosted scenario requires container/service configuration. Database engine selection, migration strategy, and deployment topology should be specified before generating infrastructure-dependent code.
-- [ ] Code Generation — **EXECUTE** (ALWAYS)
-  - **Rationale**: Implementation planning and code generation for all units.
-- [ ] Build and Test — **EXECUTE** (ALWAYS)
-  - **Rationale**: Build, test execution, and verification instructions for all units.
+- [x] Functional Design — COMPLETED
+- [x] NFR Requirements — COMPLETED
+- [x] NFR Design — COMPLETED
+- [x] Infrastructure Design — COMPLETED
+- [x] Code Generation — COMPLETED
+- [x] Build and Test — COMPLETED
 
 ### 🟡 OPERATIONS PHASE
 
-- [ ] Operations — **PLACEHOLDER**
-  - **Rationale**: Future deployment and monitoring workflows; not in current scope.
+- [x] Operations — SKIPPED (PLACEHOLDER; no actionable AI-DLC stage is defined in the current version)
+
+## Post-Workflow Enhancements
+- [x] CI Phase 1 Implementation — COMPLETED (GitHub Actions baseline at `.github/workflows/ci-phase1.yml`)
+- [ ] CI Phase 2 Hardening — NOT STARTED
 
 ---
 
