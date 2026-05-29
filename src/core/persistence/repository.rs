@@ -452,11 +452,10 @@ impl AccountReadRepository for PgAccountRepository {
 
         let records = if let Some(account_type) = &filter.account_type {
             sqlx::query_as::<_, AccountRecord>(&format!(
-                "SELECT {} FROM accounts \
+                "SELECT {ACCOUNT_COLUMNS} FROM accounts \
                      WHERE user_id = $1 AND account_type = $2 AND deleted_at IS NULL \
                      ORDER BY name ASC, id ASC \
                      LIMIT $3 OFFSET $4",
-                ACCOUNT_COLUMNS
             ))
             .bind(user_id)
             .bind(account_type)
@@ -466,11 +465,10 @@ impl AccountReadRepository for PgAccountRepository {
             .await?
         } else {
             sqlx::query_as::<_, AccountRecord>(&format!(
-                "SELECT {} FROM accounts \
+                "SELECT {ACCOUNT_COLUMNS} FROM accounts \
                      WHERE user_id = $1 AND deleted_at IS NULL \
                      ORDER BY name ASC, id ASC \
                      LIMIT $2 OFFSET $3",
-                ACCOUNT_COLUMNS
             ))
             .bind(user_id)
             .bind(limit)
@@ -497,9 +495,8 @@ impl AccountReadRepository for PgAccountRepository {
         E: Executor<'c, Database = Postgres> + Send,
     {
         let record = sqlx::query_as::<_, AccountRecord>(&format!(
-            "SELECT {} FROM accounts \
+            "SELECT {ACCOUNT_COLUMNS} FROM accounts \
                  WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL",
-            ACCOUNT_COLUMNS
         ))
         .bind(account_id)
         .bind(user_id)
@@ -540,18 +537,17 @@ impl AccountWriteRepository for PgAccountRepository {
     ) -> Result<AccountRecord, RepoError> {
         let record = sqlx::query_as::<_, AccountRecord>(&format!(
             "INSERT INTO accounts \
-                 (user_id, account_type, name, current_balance, currency_code, \
-                  active, initial_balance, initial_balance_date, virtual_balance, \
-                  iban, bic, account_number, notes, include_net_worth, \"order\", account_role, \
-                  liability_type, liability_direction, interest, interest_period, \
-                  cc_type, cc_monthly_payment_date, opening_balance_date) \
-                 VALUES ($1, $2, $3, $4, $5, \
-                         $6, $7, $8, $9, \
-                         $10, $11, $12, $13, $14, $15, $16, \
-                         $17, $18, $19, $20, \
-                         $21, $22, $23) \
-                 RETURNING {}",
-            ACCOUNT_COLUMNS
+             (user_id, account_type, name, current_balance, currency_code, \
+              active, initial_balance, initial_balance_date, virtual_balance, \
+              iban, bic, account_number, notes, include_net_worth, \"order\", account_role, \
+              liability_type, liability_direction, interest, interest_period, \
+              cc_type, cc_monthly_payment_date, opening_balance_date) \
+             VALUES ($1, $2, $3, $4, $5, \
+                 $6, $7, $8, $9, \
+                 $10, $11, $12, $13, $14, $15, $16, \
+                 $17, $18, $19, $20, \
+                 $21, $22, $23) \
+             RETURNING {ACCOUNT_COLUMNS}",
         ))
         .bind(user_id)
         .bind(account_type)

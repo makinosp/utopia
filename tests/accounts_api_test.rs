@@ -236,7 +236,7 @@ async fn creates_account_and_returns_201_with_firefly_envelope() {
     // Verify parsable ID for subsequent tests
     let account_id = payload["data"]["id"].as_str().unwrap().to_string();
     assert!(!account_id.is_empty());
-    eprintln!("Created account ID: {}", account_id);
+    eprintln!("Created account ID: {account_id}");
 }
 
 #[tokio::test]
