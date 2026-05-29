@@ -14,6 +14,7 @@ pub struct UserRecord {
     pub id: Uuid,
     pub email: String,
     pub blocked: bool,
+    pub primary_currency_code: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

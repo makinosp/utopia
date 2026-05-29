@@ -12,6 +12,7 @@ const SUPPORTED_ACCOUNT_TYPES: &[&str] = &[
     "hidden",
     "liability",
     "liabilities",
+    "credit card",
     "default account",
     "cash account",
     "asset account",

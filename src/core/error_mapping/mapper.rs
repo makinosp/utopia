@@ -19,7 +19,7 @@ pub fn map_domain_error(err: DomainError) -> (StatusCode, FireflyErrorResponse) 
     match err {
         DomainError::NotFound => (
             StatusCode::NOT_FOUND,
-            FireflyErrorResponse::new("Not found."),
+            FireflyErrorResponse::new("Not Found"),
         ),
         DomainError::Validation(fields) => map_validation_error(fields),
         DomainError::Persistence | DomainError::Unexpected => (

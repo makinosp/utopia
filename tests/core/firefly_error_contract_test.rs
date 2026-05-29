@@ -81,7 +81,7 @@ mod firefly_error_contract_tests {
     fn test_not_found_returns_404() {
         let (status, response) = map_domain_error(DomainError::NotFound);
         assert_eq!(status, StatusCode::NOT_FOUND);
-        assert_eq!(response.message, "Not found.");
+        assert_eq!(response.message, "Not Found");
         assert!(response.errors.is_empty());
     }
 
@@ -134,7 +134,7 @@ mod firefly_error_contract_tests {
             ),
             (
                 StatusCode::NOT_FOUND,
-                FireflyErrorResponse::new("Not found."),
+                FireflyErrorResponse::new("Not Found"),
             ),
         ];
 
