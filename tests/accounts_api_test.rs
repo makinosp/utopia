@@ -153,13 +153,10 @@ async fn lists_accounts_in_firefly_format_with_pagination_and_type_filter() {
         account["attributes"]["primary_currency_decimal_places"],
         json!(2)
     );
-    assert!(
-        account["attributes"]["current_balance_date"]
-            .as_str()
-            .unwrap()
-            .len()
-            > 0
-    );
+    assert!(!account["attributes"]["current_balance_date"]
+        .as_str()
+        .unwrap()
+        .is_empty());
     assert!(account["attributes"]["order"].is_null());
     assert_eq!(account["links"][0]["rel"], json!("self"));
 }
@@ -215,7 +212,7 @@ async fn creates_account_and_returns_201_with_firefly_envelope() {
 
     // Verify envelope
     assert_eq!(payload["data"]["type"], json!("accounts"));
-    assert!(payload["data"]["id"].as_str().unwrap().len() > 0);
+    assert!(!payload["data"]["id"].as_str().unwrap().is_empty());
 
     // Verify attributes
     let attrs = &payload["data"]["attributes"];
@@ -226,13 +223,13 @@ async fn creates_account_and_returns_201_with_firefly_envelope() {
     assert_eq!(attrs["include_net_worth"], json!(true));
     assert_eq!(attrs["account_role"], json!("defaultAsset"));
     assert_eq!(attrs["notes"], json!("Main checking account"));
-    assert!(attrs["created_at"].as_str().unwrap().len() > 0);
-    assert!(attrs["updated_at"].as_str().unwrap().len() > 0);
+    assert!(!attrs["created_at"].as_str().unwrap().is_empty());
+    assert!(!attrs["updated_at"].as_str().unwrap().is_empty());
     assert_eq!(attrs["primary_currency_code"], json!("USD"));
     assert_eq!(attrs["primary_currency_name"], json!("US Dollar"));
     assert_eq!(attrs["primary_currency_symbol"], json!("$"));
     assert_eq!(attrs["primary_currency_decimal_places"], json!(2));
-    assert!(attrs["current_balance_date"].as_str().unwrap().len() > 0);
+    assert!(!attrs["current_balance_date"].as_str().unwrap().is_empty());
     assert!(attrs["order"].is_null());
     assert_eq!(payload["data"]["links"][0]["rel"], json!("self"));
 

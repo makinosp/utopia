@@ -167,6 +167,7 @@ const ACCOUNT_COLUMNS: &str = "\
     liability_type, liability_direction, interest, interest_period, \
     cc_type, cc_monthly_payment_date, opening_balance_date";
 
+#[allow(clippy::too_many_arguments)]
 #[async_trait]
 pub trait AccountWriteRepository: Send + Sync {
     async fn create(
