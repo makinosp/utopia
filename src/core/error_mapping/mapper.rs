@@ -13,10 +13,19 @@ pub enum DomainError {
     Persistence,
     #[allow(dead_code)]
     Unexpected,
+    #[allow(dead_code)]
+    Conflict(String),
 }
 
 pub fn map_domain_error(err: DomainError) -> (StatusCode, FireflyErrorResponse) {
     match err {
+        DomainError::Conflict(msg) => (
+            StatusCode::CONFLICT,
+            FireflyErrorResponse {
+                message: msg,
+                errors: HashMap::new(),
+            },
+        ),
         DomainError::NotFound => (
             StatusCode::NOT_FOUND,
             FireflyErrorResponse::new("Not Found"),

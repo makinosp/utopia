@@ -14,6 +14,10 @@ use crate::api::handlers::accounts::{
 use crate::api::handlers::tokens::{
     bootstrap_issue_token_handler, issue_token_handler, revoke_token_handler,
 };
+use crate::api::handlers::transactions::{
+    create_transaction_handler, delete_transaction_handler, get_transaction_handler,
+    list_account_transactions_handler, list_transactions_handler, update_transaction_handler,
+};
 use crate::api::middleware::accept_header_middleware;
 use crate::app::AppState;
 use crate::core::auth::metrics::metrics_handler;
@@ -26,6 +30,12 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/v1/accounts/:id", get(get_account_handler))
         .route("/api/v1/accounts/:id", put(update_account_handler))
         .route("/api/v1/accounts/:id", delete(delete_account_handler))
+        .route("/api/v1/accounts/:id/transactions", get(list_account_transactions_handler))
+        .route("/api/v1/transactions", get(list_transactions_handler))
+        .route("/api/v1/transactions", post(create_transaction_handler))
+        .route("/api/v1/transactions/:id", get(get_transaction_handler))
+        .route("/api/v1/transactions/:id", put(update_transaction_handler))
+        .route("/api/v1/transactions/:id", delete(delete_transaction_handler))
         .route("/api/v1/tokens", post(issue_token_handler))
         .route("/api/v1/tokens/:id", delete(revoke_token_handler))
         .route_layer(middleware::from_fn_with_state(
