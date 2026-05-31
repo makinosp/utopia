@@ -156,7 +156,9 @@ pub trait AccountReadRepository: Send + Sync {
         E: Executor<'c, Database = Postgres> + Send;
 
     /// Lock account rows with SELECT FOR UPDATE for concurrency-safe balance updates.
-    /// Returns the account records if found, or RepoError if any account doesn't exist.
+    /// Returns the account records that were found. Missing accounts are not treated
+    /// as an error; callers should verify that all requested IDs are present in the
+    /// returned vector.
     async fn lock_accounts_for_update(
         &self,
         tx: &mut Transaction<'_, Postgres>,
