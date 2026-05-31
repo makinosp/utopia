@@ -536,7 +536,7 @@ impl AccountReadRepository for PgAccountRepository {
              WHERE user_id = ",
         );
         builder.push_bind(user_id);
-        builder.push(" AND id = ANY(");
+        builder.push(" AND id IN (");
         // Build a parameterized list of account IDs
         let mut ids = builder.separated(", ");
         for id in account_ids {
