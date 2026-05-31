@@ -137,7 +137,12 @@ pub async fn update_transaction_handler(
         state.repositories.account.clone(),
     );
     let result = service
-        .update_transaction(transaction_id, request, &principal, &state.repositories.pool)
+        .update_transaction(
+            transaction_id,
+            request,
+            &principal,
+            &state.repositories.pool,
+        )
         .await
         .map_err(map_domain_error_to_json)?;
 
@@ -209,18 +214,21 @@ fn parse_page_param(raw: Option<String>) -> Result<u32, (StatusCode, Json<Firefl
     if raw.is_none() || raw.map(|s| s.trim().is_empty()).unwrap_or(true) {
         return Ok(crate::modules::transactions::DEFAULT_PAGE);
     }
-    let val = raw
-        .unwrap()
-        .parse::<u32>()
-        .map_err(|_| {
-            let mut fields = std::collections::HashMap::new();
-            fields.insert("page".to_string(), vec!["The page field must be an integer.".to_string()]);
-            let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
-            (status, Json(response))
-        })?;
+    let val = raw.unwrap().parse::<u32>().map_err(|_| {
+        let mut fields = std::collections::HashMap::new();
+        fields.insert(
+            "page".to_string(),
+            vec!["The page field must be an integer.".to_string()],
+        );
+        let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
+        (status, Json(response))
+    })?;
     if val == 0 {
         let mut fields = std::collections::HashMap::new();
-        fields.insert("page".to_string(), vec!["The page field must be at least 1.".to_string()]);
+        fields.insert(
+            "page".to_string(),
+            vec!["The page field must be at least 1.".to_string()],
+        );
         let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
         return Err((status, Json(response)));
     }
@@ -232,24 +240,30 @@ fn parse_limit_param(raw: Option<String>) -> Result<u32, (StatusCode, Json<Firef
     if raw.is_none() || raw.map(|s| s.trim().is_empty()).unwrap_or(true) {
         return Ok(crate::modules::transactions::DEFAULT_LIMIT);
     }
-    let val = raw
-        .unwrap()
-        .parse::<u32>()
-        .map_err(|_| {
-            let mut fields = std::collections::HashMap::new();
-            fields.insert("limit".to_string(), vec!["The limit field must be an integer.".to_string()]);
-            let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
-            (status, Json(response))
-        })?;
+    let val = raw.unwrap().parse::<u32>().map_err(|_| {
+        let mut fields = std::collections::HashMap::new();
+        fields.insert(
+            "limit".to_string(),
+            vec!["The limit field must be an integer.".to_string()],
+        );
+        let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
+        (status, Json(response))
+    })?;
     if val == 0 {
         let mut fields = std::collections::HashMap::new();
-        fields.insert("limit".to_string(), vec!["The limit field must be at least 1.".to_string()]);
+        fields.insert(
+            "limit".to_string(),
+            vec!["The limit field must be at least 1.".to_string()],
+        );
         let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
         return Err((status, Json(response)));
     }
     if val > crate::modules::transactions::MAX_LIMIT {
         let mut fields = std::collections::HashMap::new();
-        fields.insert("limit".to_string(), vec!["The limit field may not be greater than 100.".to_string()]);
+        fields.insert(
+            "limit".to_string(),
+            vec!["The limit field may not be greater than 100.".to_string()],
+        );
         let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
         return Err((status, Json(response)));
     }
