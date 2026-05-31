@@ -155,6 +155,16 @@ pub trait AccountReadRepository: Send + Sync {
     where
         E: Executor<'c, Database = Postgres> + Send;
 
+    /// Find multiple accounts by their IDs.
+    async fn find_by_ids<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+        account_ids: &[Uuid],
+    ) -> Result<Vec<AccountRecord>, RepoError>
+    where
+        E: Executor<'c, Database = Postgres> + Send;
+
     /// Lock account rows with SELECT FOR UPDATE for concurrency-safe balance updates.
     /// Returns the account records that were found. Missing accounts are not treated
     /// as an error; callers should verify that all requested IDs are present in the
@@ -435,6 +445,46 @@ impl BootstrapKeyRepository for PgBootstrapKeyRepository {
 
 #[async_trait]
 impl AccountReadRepository for PgAccountRepository {
+    async fn find_by_ids<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+        account_ids: &[Uuid],
+    ) -> Result<Vec<AccountRecord>, RepoError>
+    where
+        E: Executor<'c, Database = Postgres> + Send,
+    {
+        if account_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Create placeholders for the IN clause
+        let placeholders: Vec<String> =
+            (1..=account_ids.len()).map(|i| format!("${}", i)).collect();
+        let placeholders_str = placeholders.join(",");
+
+        let query = format!(
+            "SELECT {ACCOUNT_COLUMNS} FROM accounts \
+             WHERE user_id = ${} AND id IN ({}) AND deleted_at IS NULL",
+            account_ids.len() + 1,
+            placeholders_str
+        );
+
+        let mut query_builder = sqlx::query_as::<_, AccountRecord>(&query);
+
+        // Bind user_id as the last parameter
+        query_builder = query_builder.bind(user_id);
+
+        // Bind account_ids
+        for account_id in account_ids {
+            query_builder = query_builder.bind(account_id);
+        }
+
+        let records = query_builder.fetch_all(executor).await?;
+
+        Ok(records)
+    }
+
     async fn list_by_user(
         &self,
         pool: &PgPool,

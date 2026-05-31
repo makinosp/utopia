@@ -424,26 +424,53 @@ impl TransactionService {
         views: &mut [TransactionView],
         pool: &PgPool,
     ) -> Result<(), DomainError> {
+        // Collect all account IDs that need to be resolved
+        let mut account_ids: std::collections::HashSet<Uuid> = std::collections::HashSet::new();
+        for view in views.iter() {
+            if let Some(src_id) = view.source_id {
+                account_ids.insert(src_id);
+            }
+            if let Some(dst_id) = view.destination_id {
+                account_ids.insert(dst_id);
+            }
+        }
+
+        // If no account IDs to resolve, return early
+        if account_ids.is_empty() {
+            return Ok(());
+        }
+
+        // Fetch all account names in a single query
+        let account_records = self
+            .account_read_repo
+            .find_by_ids(
+                pool,
+                views[0].user_id,
+                &account_ids.into_iter().collect::<Vec<_>>(),
+            )
+            .await
+            .map_err(|_| DomainError::Persistence)?;
+
+        // Create a map for quick lookup
+        let account_map: std::collections::HashMap<Uuid, String> = account_records
+            .into_iter()
+            .map(|record| (record.id, record.name))
+            .collect();
+
+        // Populate the source_name and destination_name fields
         for view in views.iter_mut() {
             if let Some(src_id) = view.source_id {
-                if let Ok(Some(record)) = self
-                    .account_read_repo
-                    .find_by_id(pool, view.user_id, src_id)
-                    .await
-                {
-                    view.source_name = Some(record.name);
+                if let Some(name) = account_map.get(&src_id) {
+                    view.source_name = Some(name.clone());
                 }
             }
             if let Some(dst_id) = view.destination_id {
-                if let Ok(Some(record)) = self
-                    .account_read_repo
-                    .find_by_id(pool, view.user_id, dst_id)
-                    .await
-                {
-                    view.destination_name = Some(record.name);
+                if let Some(name) = account_map.get(&dst_id) {
+                    view.destination_name = Some(name.clone());
                 }
             }
         }
+
         Ok(())
     }
 
