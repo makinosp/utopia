@@ -753,6 +753,16 @@ impl TransactionService {
         let new_source = req.source_id.unwrap_or(original.source_id);
         let new_dest = req.destination_id.unwrap_or(original.destination_id);
 
+        // Validate amount if provided
+        if let Some(amount) = req.amount {
+            if amount <= Decimal::ZERO {
+                return Err(validation_error(
+                    "amount",
+                    "The amount must be a positive number.",
+                ));
+            }
+        }
+
         // Re-validate accounts with new values and lock them
         let mut tx = pool.begin().await.map_err(|_| DomainError::Persistence)?;
 
@@ -766,6 +776,7 @@ impl TransactionService {
                 transaction_id,
                 principal.user_id,
                 crate::core::persistence::repository::UpdateTransactionRequest {
+                    transaction_type: req.transaction_type.clone(),
                     description: req.description.clone(),
                     amount: req.amount,
                     date: req.date,
