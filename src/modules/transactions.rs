@@ -424,23 +424,23 @@ impl TransactionService {
         views: &mut [TransactionView],
         pool: &PgPool,
     ) -> Result<(), DomainError> {
-        for i in 0..views.len() {
-            if let Some(src_id) = views[i].source_id {
+        for view in views.iter_mut() {
+            if let Some(src_id) = view.source_id {
                 if let Ok(Some(record)) = self
                     .account_read_repo
-                    .find_by_id(pool, views[i].user_id, src_id)
+                    .find_by_id(pool, view.user_id, src_id)
                     .await
                 {
-                    views[i].source_name = Some(record.name);
+                    view.source_name = Some(record.name);
                 }
             }
-            if let Some(dst_id) = views[i].destination_id {
+            if let Some(dst_id) = view.destination_id {
                 if let Ok(Some(record)) = self
                     .account_read_repo
-                    .find_by_id(pool, views[i].user_id, dst_id)
+                    .find_by_id(pool, view.user_id, dst_id)
                     .await
                 {
-                    views[i].destination_name = Some(record.name);
+                    view.destination_name = Some(record.name);
                 }
             }
         }
@@ -656,18 +656,20 @@ impl TransactionService {
             .write_repo
             .create(
                 &mut tx,
-                principal.user_id,
-                group_id,
-                &transaction_type,
-                &req.description,
-                req.amount,
-                &req.currency_code,
-                date,
-                req.source_id,
-                req.destination_id,
-                req.category_name.as_deref(),
-                req.notes.as_deref(),
-                req.reconciled.unwrap_or(false),
+                crate::core::persistence::repository::CreateTransactionRequest {
+                    user_id: principal.user_id,
+                    group_id,
+                    transaction_type: transaction_type.clone(),
+                    description: req.description.clone(),
+                    amount: req.amount,
+                    currency_code: req.currency_code.clone(),
+                    date,
+                    source_id: req.source_id,
+                    destination_id: req.destination_id,
+                    category_name: req.category_name.clone(),
+                    notes: req.notes.clone(),
+                    reconciled: req.reconciled.unwrap_or(false),
+                },
             )
             .await
             .map_err(|_| DomainError::Persistence)?;
@@ -736,14 +738,16 @@ impl TransactionService {
                 &mut tx,
                 transaction_id,
                 principal.user_id,
-                req.description.as_deref(),
-                req.amount,
-                req.date,
-                req.source_id,
-                req.destination_id,
-                req.category_name.as_ref().map(|v| v.as_deref()),
-                req.notes.as_ref().map(|v| v.as_deref()),
-                req.reconciled,
+                crate::core::persistence::repository::UpdateTransactionRequest {
+                    description: req.description.clone(),
+                    amount: req.amount,
+                    date: req.date,
+                    source_id: req.source_id,
+                    destination_id: req.destination_id,
+                    category_name: req.category_name.clone(),
+                    notes: req.notes.clone(),
+                    reconciled: req.reconciled,
+                },
             )
             .await
             .map_err(|_| DomainError::Persistence)?;

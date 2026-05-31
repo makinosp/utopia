@@ -889,23 +889,40 @@ pub trait TransactionReadRepository: Send + Sync {
     ) -> Result<Paginated<TransactionRecord>, RepoError>;
 }
 
+#[derive(Debug, Clone)]
+pub struct CreateTransactionRequest {
+    pub user_id: Uuid,
+    pub group_id: Uuid,
+    pub transaction_type: String,
+    pub description: String,
+    pub amount: Decimal,
+    pub currency_code: String,
+    pub date: DateTime<Utc>,
+    pub source_id: Option<Uuid>,
+    pub destination_id: Option<Uuid>,
+    pub category_name: Option<String>,
+    pub notes: Option<String>,
+    pub reconciled: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct UpdateTransactionRequest {
+    pub description: Option<String>,
+    pub amount: Option<Decimal>,
+    pub date: Option<DateTime<Utc>>,
+    pub source_id: Option<Option<Uuid>>,
+    pub destination_id: Option<Option<Uuid>>,
+    pub category_name: Option<Option<String>>,
+    pub notes: Option<Option<String>>,
+    pub reconciled: Option<bool>,
+}
+
 #[async_trait]
 pub trait TransactionWriteRepository: Send + Sync {
     async fn create(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        user_id: Uuid,
-        group_id: Uuid,
-        transaction_type: &str,
-        description: &str,
-        amount: Decimal,
-        currency_code: &str,
-        date: DateTime<Utc>,
-        source_id: Option<Uuid>,
-        destination_id: Option<Uuid>,
-        category_name: Option<&str>,
-        notes: Option<&str>,
-        reconciled: bool,
+        request: CreateTransactionRequest,
     ) -> Result<TransactionRecord, RepoError>;
 
     async fn update(
@@ -913,14 +930,7 @@ pub trait TransactionWriteRepository: Send + Sync {
         tx: &mut Transaction<'_, Postgres>,
         transaction_id: Uuid,
         user_id: Uuid,
-        description: Option<&str>,
-        amount: Option<Decimal>,
-        date: Option<DateTime<Utc>>,
-        source_id: Option<Option<Uuid>>,
-        destination_id: Option<Option<Uuid>>,
-        category_name: Option<Option<&str>>,
-        notes: Option<Option<&str>>,
-        reconciled: Option<bool>,
+        request: UpdateTransactionRequest,
     ) -> Result<TransactionRecord, RepoError>;
 
     async fn hard_delete(
@@ -1086,18 +1096,7 @@ impl TransactionWriteRepository for PgTransactionRepository {
     async fn create(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        user_id: Uuid,
-        group_id: Uuid,
-        transaction_type: &str,
-        description: &str,
-        amount: Decimal,
-        currency_code: &str,
-        date: DateTime<Utc>,
-        source_id: Option<Uuid>,
-        destination_id: Option<Uuid>,
-        category_name: Option<&str>,
-        notes: Option<&str>,
-        reconciled: bool,
+        request: CreateTransactionRequest,
     ) -> Result<TransactionRecord, RepoError> {
         let record = sqlx::query_as::<_, TransactionRecord>(&format!(
             "INSERT INTO transaction_journals \
@@ -1106,18 +1105,18 @@ impl TransactionWriteRepository for PgTransactionRepository {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \
              RETURNING {TRANSACTION_COLUMNS}",
         ))
-        .bind(user_id)
-        .bind(group_id)
-        .bind(transaction_type)
-        .bind(description)
-        .bind(amount)
-        .bind(currency_code)
-        .bind(date)
-        .bind(source_id)
-        .bind(destination_id)
-        .bind(category_name)
-        .bind(notes)
-        .bind(reconciled)
+        .bind(request.user_id)
+        .bind(request.group_id)
+        .bind(request.transaction_type)
+        .bind(request.description)
+        .bind(request.amount)
+        .bind(request.currency_code)
+        .bind(request.date)
+        .bind(request.source_id)
+        .bind(request.destination_id)
+        .bind(request.category_name)
+        .bind(request.notes)
+        .bind(request.reconciled)
         .fetch_one(tx.as_mut())
         .await?;
 
@@ -1129,14 +1128,7 @@ impl TransactionWriteRepository for PgTransactionRepository {
         tx: &mut Transaction<'_, Postgres>,
         transaction_id: Uuid,
         user_id: Uuid,
-        description: Option<&str>,
-        amount: Option<Decimal>,
-        date: Option<DateTime<Utc>>,
-        source_id: Option<Option<Uuid>>,
-        destination_id: Option<Option<Uuid>>,
-        category_name: Option<Option<&str>>,
-        notes: Option<Option<&str>>,
-        reconciled: Option<bool>,
+        request: UpdateTransactionRequest,
     ) -> Result<TransactionRecord, RepoError> {
         use sqlx::QueryBuilder;
 
@@ -1145,24 +1137,24 @@ impl TransactionWriteRepository for PgTransactionRepository {
 
         let mut sep = builder.separated(", ");
 
-        if let Some(v) = description {
+        if let Some(v) = request.description {
             sep.push("description = ");
             sep.push_bind(v);
         }
-        if let Some(v) = amount {
+        if let Some(v) = request.amount {
             sep.push("amount = ");
             sep.push_bind(v);
         }
-        if let Some(v) = date {
+        if let Some(v) = request.date {
             sep.push("date = ");
             sep.push_bind(v);
         }
-        if let Some(v) = reconciled {
+        if let Some(v) = request.reconciled {
             sep.push("reconciled = ");
             sep.push_bind(v);
         }
 
-        if let Some(ref v) = source_id {
+        if let Some(ref v) = request.source_id {
             if let Some(val) = v {
                 sep.push("source_id = ");
                 sep.push_bind(val);
@@ -1170,7 +1162,7 @@ impl TransactionWriteRepository for PgTransactionRepository {
                 sep.push("source_id = NULL");
             }
         }
-        if let Some(ref v) = destination_id {
+        if let Some(ref v) = request.destination_id {
             if let Some(val) = v {
                 sep.push("destination_id = ");
                 sep.push_bind(val);
@@ -1178,7 +1170,7 @@ impl TransactionWriteRepository for PgTransactionRepository {
                 sep.push("destination_id = NULL");
             }
         }
-        if let Some(ref v) = category_name {
+        if let Some(ref v) = request.category_name {
             if let Some(val) = v {
                 sep.push("category_name = ");
                 sep.push_bind(val);
@@ -1186,7 +1178,7 @@ impl TransactionWriteRepository for PgTransactionRepository {
                 sep.push("category_name = NULL");
             }
         }
-        if let Some(ref v) = notes {
+        if let Some(ref v) = request.notes {
             if let Some(val) = v {
                 sep.push("notes = ");
                 sep.push_bind(val);
