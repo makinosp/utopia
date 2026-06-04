@@ -590,10 +590,15 @@ impl TransactionService {
             lock_ids.push(src);
         }
         if let Some(dst) = destination_id {
-            if !lock_ids.contains(&dst) {
+            if dst != src {
                 lock_ids.push(dst);
             }
         }
+
+        // Sort and deduplicate IDs to ensure consistent locking order and prevent deadlocks
+        let mut lock_ids: Vec<Uuid> = lock_ids.into_iter().collect();
+        lock_ids.sort();
+        lock_ids.dedup();
 
         if lock_ids.is_empty() {
             return Ok(());
