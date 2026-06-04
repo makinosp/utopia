@@ -657,6 +657,13 @@ impl TransactionService {
             ));
         }
 
+        if req.description.len() > 255 {
+            return Err(validation_error(
+                "description",
+                "The description field must not exceed 255 characters.",
+            ));
+        }
+
         if req.amount <= Decimal::ZERO {
             return Err(validation_error(
                 "amount",
@@ -759,6 +766,16 @@ impl TransactionService {
                 return Err(validation_error(
                     "amount",
                     "The amount must be a positive number.",
+                ));
+            }
+        }
+
+        // Validate description length if provided
+        if let Some(ref desc) = req.description {
+            if desc.len() > 255 {
+                return Err(validation_error(
+                    "description",
+                    "The description field must not exceed 255 characters.",
                 ));
             }
         }
