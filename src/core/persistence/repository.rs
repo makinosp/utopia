@@ -459,8 +459,7 @@ impl AccountReadRepository for PgAccountRepository {
         }
 
         // Create placeholders for the IN clause
-        let placeholders: Vec<String> =
-            (1..=account_ids.len()).map(|i| format!("${}", i)).collect();
+        let placeholders: Vec<String> = (1..=account_ids.len()).map(|i| format!("${i}")).collect();
         let placeholders_str = placeholders.join(",");
 
         let query = format!(
