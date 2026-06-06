@@ -586,11 +586,13 @@ impl TransactionService {
 
         // Collect unique account IDs for locking
         let mut lock_ids: Vec<Uuid> = Vec::new();
+        let mut src_id: Option<Uuid> = None;
         if let Some(src) = source_id {
             lock_ids.push(src);
+            src_id = Some(src);
         }
         if let Some(dst) = destination_id {
-            if dst != src {
+            if src_id != Some(dst) {
                 lock_ids.push(dst);
             }
         }
@@ -869,6 +871,11 @@ impl TransactionService {
                 lock_ids.push(dst);
             }
         }
+
+        // Sort and deduplicate IDs to ensure consistent locking order and prevent deadlocks
+        lock_ids.sort();
+        lock_ids.dedup();
+
         if !lock_ids.is_empty() {
             self.account_read_repo
                 .lock_accounts_for_update(&mut tx, principal.user_id, &lock_ids)
