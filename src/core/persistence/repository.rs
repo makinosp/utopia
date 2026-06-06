@@ -959,7 +959,6 @@ pub struct CreateTransactionRequest {
 
 #[derive(Debug, Clone, Default)]
 pub struct UpdateTransactionRequest {
-    pub transaction_type: Option<String>,
     pub description: Option<String>,
     pub amount: Option<Decimal>,
     pub date: Option<DateTime<Utc>>,

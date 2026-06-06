@@ -800,7 +800,6 @@ impl TransactionService {
                 transaction_id,
                 principal.user_id,
                 crate::core::persistence::repository::UpdateTransactionRequest {
-                    transaction_type: req.transaction_type.clone(),
                     description: req.description.clone(),
                     amount: req.amount,
                     date: req.date,
