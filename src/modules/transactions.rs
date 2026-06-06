@@ -860,27 +860,15 @@ impl TransactionService {
 
         let mut tx = pool.begin().await.map_err(|_| DomainError::Persistence)?;
 
-        // Lock affected accounts before reversing balances
-        let mut lock_ids: Vec<Uuid> = Vec::new();
-        if let Some(src) = original.source_id {
-            lock_ids.push(src);
-        }
-        if let Some(dst) = original.destination_id {
-            if !lock_ids.contains(&dst) {
-                lock_ids.push(dst);
-            }
-        }
-
-        // Sort and deduplicate IDs to ensure consistent locking order and prevent deadlocks
-        lock_ids.sort();
-        lock_ids.dedup();
-
-        if !lock_ids.is_empty() {
-            self.account_read_repo
-                .lock_accounts_for_update(&mut tx, principal.user_id, &lock_ids)
-                .await
-                .map_err(|_| DomainError::Persistence)?;
-        }
+        // Validate and lock accounts with deadlock detection
+        self.validate_and_lock_accounts(
+            &mut tx,
+            principal,
+            &original.transaction_type,
+            original.source_id,
+            original.destination_id,
+        )
+        .await?;
 
         let deleted = self
             .write_repo
