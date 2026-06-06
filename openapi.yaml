@@ -198,6 +198,155 @@ paths:
               schema:
                 type: string
 
+  /api/v1/accounts/{id}/transactions:
+    parameters:
+      - $ref: '#/components/parameters/AccountId'
+    get:
+      tags:
+        - Transactions
+      summary: List account transactions
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Account transaction list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflyListEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/v1/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: List transactions
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [withdrawal, deposit, transfer]
+      responses:
+        '200':
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflyListEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - Transactions
+      summary: Create transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/v1/transactions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Transactions
+      summary: Update transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionRequest'
+      responses:
+        '200':
+          description: Transaction updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - Transactions
+      summary: Delete transaction
+      responses:
+        '204':
+          description: Transaction deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   parameters:
     Page:
@@ -423,7 +572,6 @@ components:
           type: string
           nullable: true
         iban:
-br:
           type: string
           nullable: true
         bic:
@@ -436,7 +584,7 @@ br:
           type: string
           nullable: true
         opening_balance_date:
-: string
+          type: string
           format: date-time
           nullable: true
         include_net_worth:
@@ -445,25 +593,21 @@ br:
           type: string
           nullable: true
         liability_type:
-: string
           type: string
           nullable: true
         liability_direction:
-: string
           type: string
           nullable: true
         interest:
           type: string
           nullable: true
         interest_period:
-: string
           type: string
           nullable: true
         credit_card_type:
           type: string
           nullable: true
         monthly_payment_date:
-: string
           type: string
           nullable: true
     CreateAccountRequest:
@@ -501,7 +645,7 @@ br:
           type: string
           nullable: true
         opening_balance_date:
-: string
+          type: string
           format: date-time
           nullable: true
         virtual_balance:
@@ -511,21 +655,17 @@ br:
           type: string
           nullable: true
         liability_type:
-: string
           type: string
           nullable: true
         liability_direction:
-: string
           type: string
           nullable: true
         interest:
           type: string
           nullable: true
         interest_period:
-: string
           type: string
           nullable: true
-    UpdateAccountRequest:
       type: object
       properties:
         name:
@@ -559,7 +699,7 @@ br:
           type: string
           nullable: true
         opening_balance_date:
-: string
+          type: string
           format: date-time
           nullable: true
         virtual_balance:
@@ -569,18 +709,15 @@ br:
           type: string
           nullable: true
         liability_type:
-: string
           type: string
           nullable: true
         liability_direction:
-: string
           type: string
           nullable: true
         interest:
           type: string
           nullable: true
         interest_period:
-: string
           type: string
           nullable: true
     TokenRequest:
@@ -616,157 +753,9 @@ br:
         status:
           type: string
         created_at:
-: string
-          format: date-time
-  /api/v1/accounts/{id}/transactions:
-    parameters:
-      - $ref: '#/components/parameters/AccountId'
-    get:
-      tags:
-        - Transactions
-      summary: List account transactions
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Limit'
-      responses:
-        '200':
-          description: Account transaction list
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FireflyListEnvelopeTransaction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-  /api/v1/transactions:
-    get:
-      tags:
-        - Transactions
-      summary: List transactions
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Limit'
-        - name: start
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-        - name: end
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-        - name: type
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [withdrawal, deposit, transfer]
-      responses:
-        '200':
-          description: Transaction list
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FireflyListEnvelopeTransaction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-    post:
-      tags:
-        - Transactions
-      summary: Create transaction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateTransactionRequest'
-      responses:
-        '201':
-          description: Transaction created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-  /api/v1/transactions/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
           type: string
-          format: uuid
-    get:
-      tags:
-        - Transactions
-      summary: Get transaction
-      responses:
-        '200':
-          description: Transaction details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-    put:
-      tags:
-        - Transactions
-      summary: Update transaction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateTransactionRequest'
-      responses:
-        '200':
-          description: Transaction updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-    delete:
-      tags:
-        - Transactions
-      summary: Delete transaction
-      responses:
-        '204':
-          description: Transaction deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-  FireflyListEnvelopeTransaction:
+          format: date-time
+    FireflyListEnvelopeTransaction:
       type: object
       required:
         - data
