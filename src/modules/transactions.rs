@@ -439,14 +439,14 @@ impl TransactionService {
             return Ok(());
         }
 
-        // Fetch all account names in a single query
+        // Fetch all account names in a single query using the first view's user_id
+        let user_id = views
+            .first()
+            .map(|v| v.user_id)
+            .ok_or(DomainError::Persistence)?;
         let account_records = self
             .account_read_repo
-            .find_by_ids(
-                pool,
-                views[0].user_id,
-                &account_ids.into_iter().collect::<Vec<_>>(),
-            )
+            .find_by_ids(pool, user_id, &account_ids.into_iter().collect::<Vec<_>>())
             .await
             .map_err(|_| DomainError::Persistence)?;
 
@@ -612,13 +612,17 @@ impl TransactionService {
             .await
             .map_err(|e| {
                 // Detect deadlock (PostgreSQL error 40P01) or serialization failure (40001)
-                let RepoError::Database(ref dbe) = e;
-                if let Some(pg_err) = dbe.as_database_error() {
-                    if let Some(code) = pg_err.code() {
-                        if code.as_ref() == "40P01" || code.as_ref() == "40001" {
-                            return DomainError::Conflict(
-                                "A concurrent modification was detected. Please retry.".to_string(),
-                            );
+                match &e {
+                    RepoError::Database(dbe) => {
+                        if let Some(pg_err) = dbe.as_database_error() {
+                            if let Some(code) = pg_err.code() {
+                                if code.as_ref() == "40P01" || code.as_ref() == "40001" {
+                                    return DomainError::Conflict(
+                                        "A concurrent modification was detected. Please retry."
+                                            .to_string(),
+                                    );
+                                }
+                            }
                         }
                     }
                 }
@@ -778,6 +782,12 @@ impl TransactionService {
 
         // Validate description length if provided
         if let Some(ref desc) = req.description {
+            if desc.trim().is_empty() {
+                return Err(validation_error(
+                    "description",
+                    "The description field is required.",
+                ));
+            }
             if desc.len() > 255 {
                 return Err(validation_error(
                     "description",
@@ -814,26 +824,31 @@ impl TransactionService {
             .await
             .map_err(|_| DomainError::Persistence)?;
 
-        // Reverse old balance impacts, apply new ones
-        let old_impacts = reverse_balance_impacts(
-            &original.transaction_type,
-            original.amount,
-            original.source_id,
-            original.destination_id,
-        );
-        if !old_impacts.is_empty() {
-            self.write_repo
-                .update_account_balances(&mut tx, &old_impacts)
-                .await
-                .map_err(|_| DomainError::Persistence)?;
-        }
+        // Reverse old balance impacts, apply new ones (only if financial fields changed)
+        let financial_changed =
+            req.amount.is_some() || req.source_id.is_some() || req.destination_id.is_some();
 
-        let new_impacts = balance_impacts(new_type, new_amount, new_source, new_dest);
-        if !new_impacts.is_empty() {
-            self.write_repo
-                .update_account_balances(&mut tx, &new_impacts)
-                .await
-                .map_err(|_| DomainError::Persistence)?;
+        if financial_changed {
+            let old_impacts = reverse_balance_impacts(
+                &original.transaction_type,
+                original.amount,
+                original.source_id,
+                original.destination_id,
+            );
+            if !old_impacts.is_empty() {
+                self.write_repo
+                    .update_account_balances(&mut tx, &old_impacts)
+                    .await
+                    .map_err(|_| DomainError::Persistence)?;
+            }
+
+            let new_impacts = balance_impacts(new_type, new_amount, new_source, new_dest);
+            if !new_impacts.is_empty() {
+                self.write_repo
+                    .update_account_balances(&mut tx, &new_impacts)
+                    .await
+                    .map_err(|_| DomainError::Persistence)?;
+            }
         }
 
         tx.commit().await.map_err(|_| DomainError::Persistence)?;
