@@ -73,7 +73,6 @@ pub struct UpdateTransactionRequest {
     pub transaction_type: Option<String>,
     pub description: Option<String>,
     pub amount: Option<Decimal>,
-    #[allow(dead_code)]
     pub currency_code: Option<String>,
     pub date: Option<DateTime<Utc>>,
     pub source_id: Option<Option<Uuid>>,
@@ -803,6 +802,8 @@ impl TransactionService {
                     description: req.description.clone(),
                     amount: req.amount,
                     date: req.date,
+                    transaction_type: req.transaction_type.clone(),
+                    currency_code: req.currency_code.clone(),
                     source_id: req.source_id,
                     destination_id: req.destination_id,
                     category_name: req.category_name.clone(),

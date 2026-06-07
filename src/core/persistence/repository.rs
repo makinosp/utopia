@@ -961,6 +961,8 @@ pub struct UpdateTransactionRequest {
     pub description: Option<String>,
     pub amount: Option<Decimal>,
     pub date: Option<DateTime<Utc>>,
+    pub transaction_type: Option<String>,
+    pub currency_code: Option<String>,
     pub source_id: Option<Option<Uuid>>,
     pub destination_id: Option<Option<Uuid>>,
     pub category_name: Option<Option<String>>,
@@ -1200,11 +1202,14 @@ impl TransactionWriteRepository for PgTransactionRepository {
             sep.push("date = ");
             sep.push_bind(v);
         }
-        if let Some(v) = request.reconciled {
-            sep.push("reconciled = ");
+        if let Some(v) = request.transaction_type {
+            sep.push("transaction_type = ");
             sep.push_bind(v);
         }
-
+        if let Some(v) = request.currency_code {
+            sep.push("currency_code = ");
+            sep.push_bind(v);
+        }
         if let Some(ref v) = request.source_id {
             if let Some(val) = v {
                 sep.push("source_id = ");
@@ -1236,6 +1241,10 @@ impl TransactionWriteRepository for PgTransactionRepository {
             } else {
                 sep.push("notes = NULL");
             }
+        }
+        if let Some(v) = request.reconciled {
+            sep.push("reconciled = ");
+            sep.push_bind(v);
         }
 
         if builder.sql().ends_with("SET ") {
