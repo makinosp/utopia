@@ -198,6 +198,157 @@ paths:
               schema:
                 type: string
 
+  /api/v1/accounts/{id}/transactions:
+    parameters:
+      - $ref: '#/components/parameters/AccountId'
+    get:
+      tags:
+        - Transactions
+      summary: List account transactions
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Account transaction list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflyListEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/v1/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: List transactions
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [withdrawal, deposit, transfer]
+      responses:
+        '200':
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflyListEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - Transactions
+      summary: Create transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/v1/transactions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Transactions
+      summary: Update transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionRequest'
+      responses:
+        '200':
+          description: Transaction updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflySingleEnvelopeTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - Transactions
+      summary: Delete transaction
+      responses:
+        '204':
+          description: Transaction deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   parameters:
     Page:
@@ -423,7 +574,6 @@ components:
           type: string
           nullable: true
         iban:
-br:
           type: string
           nullable: true
         bic:
@@ -436,7 +586,7 @@ br:
           type: string
           nullable: true
         opening_balance_date:
-: string
+          type: string
           format: date-time
           nullable: true
         include_net_worth:
@@ -445,25 +595,21 @@ br:
           type: string
           nullable: true
         liability_type:
-: string
           type: string
           nullable: true
         liability_direction:
-: string
           type: string
           nullable: true
         interest:
           type: string
           nullable: true
         interest_period:
-: string
           type: string
           nullable: true
         credit_card_type:
           type: string
           nullable: true
         monthly_payment_date:
-: string
           type: string
           nullable: true
     CreateAccountRequest:
@@ -501,7 +647,7 @@ br:
           type: string
           nullable: true
         opening_balance_date:
-: string
+          type: string
           format: date-time
           nullable: true
         virtual_balance:
@@ -511,21 +657,17 @@ br:
           type: string
           nullable: true
         liability_type:
-: string
           type: string
           nullable: true
         liability_direction:
-: string
           type: string
           nullable: true
         interest:
           type: string
           nullable: true
         interest_period:
-: string
           type: string
           nullable: true
-    UpdateAccountRequest:
       type: object
       properties:
         name:
@@ -559,7 +701,7 @@ br:
           type: string
           nullable: true
         opening_balance_date:
-: string
+          type: string
           format: date-time
           nullable: true
         virtual_balance:
@@ -569,18 +711,15 @@ br:
           type: string
           nullable: true
         liability_type:
-: string
           type: string
           nullable: true
         liability_direction:
-: string
           type: string
           nullable: true
         interest:
           type: string
           nullable: true
         interest_period:
-: string
           type: string
           nullable: true
     TokenRequest:
@@ -616,5 +755,180 @@ br:
         status:
           type: string
         created_at:
-: string
+          type: string
           format: date-time
+    FireflyListEnvelopeTransaction:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FireflyTransactionResource'
+        meta:
+          $ref: '#/components/schemas/FireflyListMeta'
+    FireflySingleEnvelopeTransaction:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/FireflyTransactionResource'
+    FireflyTransactionResource:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - links
+      properties:
+        type:
+          type: string
+          example: transactions
+        id:
+          type: string
+          format: uuid
+        attributes:
+          $ref: '#/components/schemas/FireflyTransactionAttributes'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/FireflyLink'
+    FireflyTransactionAttributes:
+      type: object
+      required:
+        - created_at
+        - updated_at
+        - user
+        - group_id
+        - type
+        - date
+        - description
+        - amount
+        - currency_code
+        - reconciled
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        user:
+          type: string
+        group_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [withdrawal, deposit, transfer]
+        date:
+          type: string
+          format: date-time
+        description:
+          type: string
+        amount:
+          type: string
+        currency_code:
+          type: string
+        source_id:
+          type: string
+          format: uuid
+          nullable: true
+        source_name:
+          type: string
+          nullable: true
+        destination_id:
+          type: string
+          format: uuid
+          nullable: true
+        destination_name:
+          type: string
+          nullable: true
+        category_name:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        reconciled:
+          type: boolean
+    CreateTransactionRequest:
+      type: object
+      required:
+        - transaction_type
+        - description
+        - amount
+        - currency_code
+      properties:
+        group_id:
+          type: string
+          format: uuid
+        transaction_type:
+          type: string
+          enum: [withdrawal, deposit, transfer]
+        description:
+          type: string
+        amount:
+          type: string
+        currency_code:
+          type: string
+        date:
+          type: string
+          format: date-time
+        source_id:
+          type: string
+          format: uuid
+          nullable: true
+        destination_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_name:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        reconciled:
+          type: boolean
+          nullable: true
+    UpdateTransactionRequest:
+      type: object
+      properties:
+        transaction_type:
+          type: string
+          enum: [withdrawal, deposit, transfer]
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        amount:
+          type: string
+          nullable: true
+        currency_code:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date-time
+          nullable: true
+        source_id:
+          type: string
+          format: uuid
+          nullable: true
+        destination_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_name:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        reconciled:
+          type: boolean
+          nullable: true

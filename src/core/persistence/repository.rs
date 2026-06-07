@@ -154,6 +154,27 @@ pub trait AccountReadRepository: Send + Sync {
     ) -> Result<Option<AccountRecord>, RepoError>
     where
         E: Executor<'c, Database = Postgres> + Send;
+
+    /// Find multiple accounts by their IDs.
+    async fn find_by_ids<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+        account_ids: &[Uuid],
+    ) -> Result<Vec<AccountRecord>, RepoError>
+    where
+        E: Executor<'c, Database = Postgres> + Send;
+
+    /// Lock account rows with SELECT FOR UPDATE for concurrency-safe balance updates.
+    /// Returns the account records that were found. Missing accounts are not treated
+    /// as an error; callers should verify that all requested IDs are present in the
+    /// returned vector.
+    async fn lock_accounts_for_update(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        user_id: Uuid,
+        account_ids: &[Uuid],
+    ) -> Result<Vec<AccountRecord>, RepoError>;
 }
 
 /// Column list constant for SELECT queries to avoid duplication
@@ -424,6 +445,45 @@ impl BootstrapKeyRepository for PgBootstrapKeyRepository {
 
 #[async_trait]
 impl AccountReadRepository for PgAccountRepository {
+    async fn find_by_ids<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+        account_ids: &[Uuid],
+    ) -> Result<Vec<AccountRecord>, RepoError>
+    where
+        E: Executor<'c, Database = Postgres> + Send,
+    {
+        if account_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Create placeholders for the IN clause
+        let placeholders: Vec<String> = (1..=account_ids.len()).map(|i| format!("${i}")).collect();
+        let placeholders_str = placeholders.join(",");
+
+        let query = format!(
+            "SELECT {ACCOUNT_COLUMNS} FROM accounts \
+             WHERE user_id = ${} AND id IN ({}) AND deleted_at IS NULL",
+            account_ids.len() + 1,
+            placeholders_str
+        );
+
+        let mut query_builder = sqlx::query_as::<_, AccountRecord>(&query);
+
+        // Bind user_id as the last parameter
+        query_builder = query_builder.bind(user_id);
+
+        // Bind account_ids
+        for account_id in account_ids {
+            query_builder = query_builder.bind(account_id);
+        }
+
+        let records = query_builder.fetch_all(executor).await?;
+
+        Ok(records)
+    }
+
     async fn list_by_user(
         &self,
         pool: &PgPool,
@@ -504,6 +564,44 @@ impl AccountReadRepository for PgAccountRepository {
         .await?;
 
         Ok(record)
+    }
+
+    async fn lock_accounts_for_update(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        user_id: Uuid,
+        account_ids: &[Uuid],
+    ) -> Result<Vec<AccountRecord>, RepoError> {
+        if account_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        use sqlx::QueryBuilder;
+        let mut builder: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+            "SELECT id, user_id, account_type, name, current_balance, currency_code, \
+             created_at, updated_at, active, initial_balance, initial_balance_date, \
+             virtual_balance, deleted_at, iban, bic, account_number, notes, \
+             include_net_worth, \"order\", account_role, \
+             liability_type, liability_direction, interest, interest_period, \
+             cc_type, cc_monthly_payment_date, opening_balance_date \
+             FROM accounts \
+             WHERE user_id = ",
+        );
+        builder.push_bind(user_id);
+        builder.push(" AND id IN (");
+        // Build a parameterized list of account IDs
+        let mut ids = builder.separated(", ");
+        for id in account_ids {
+            ids.push_bind_unseparated(*id);
+        }
+        ids.push_unseparated(")");
+        builder.push(" AND deleted_at IS NULL FOR UPDATE");
+
+        let records = builder
+            .build_query_as::<AccountRecord>()
+            .fetch_all(tx.as_mut())
+            .await?;
+
+        Ok(records)
     }
 }
 
@@ -769,12 +867,446 @@ impl AccountWriteRepository for PgAccountRepository {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Transaction types
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct TransactionFilter {
+    pub page: u32,
+    pub limit: u32,
+    pub start_date: Option<DateTime<Utc>>,
+    pub end_date: Option<DateTime<Utc>>,
+    pub transaction_type: Option<String>,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct TransactionRecord {
+    pub id: Uuid,
+    #[allow(dead_code)]
+    pub user_id: Uuid,
+    pub group_id: Uuid,
+    pub transaction_type: String,
+    pub description: String,
+    pub amount: Decimal,
+    pub currency_code: String,
+    pub date: DateTime<Utc>,
+    pub source_id: Option<Uuid>,
+    pub destination_id: Option<Uuid>,
+    pub category_name: Option<String>,
+    pub notes: Option<String>,
+    pub reconciled: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct AccountBalanceUpdate {
+    pub account_id: Uuid,
+    pub delta: Decimal,
+}
+
+const TRANSACTION_COLUMNS: &str = "\
+    id, user_id, group_id, transaction_type, \
+    description, amount, currency_code, date, \
+    source_id, destination_id, category_name, notes, \
+    reconciled, created_at, updated_at";
+
+#[async_trait]
+pub trait TransactionReadRepository: Send + Sync {
+    async fn list_by_user(
+        &self,
+        pool: &PgPool,
+        user_id: Uuid,
+        filter: &TransactionFilter,
+    ) -> Result<Paginated<TransactionRecord>, RepoError>;
+
+    async fn find_by_id<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+        transaction_id: Uuid,
+    ) -> Result<Option<TransactionRecord>, RepoError>
+    where
+        E: Executor<'c, Database = Postgres> + Send;
+
+    async fn list_by_account(
+        &self,
+        pool: &PgPool,
+        user_id: Uuid,
+        account_id: Uuid,
+        page: u32,
+        limit: u32,
+    ) -> Result<Paginated<TransactionRecord>, RepoError>;
+}
+
+#[derive(Debug, Clone)]
+pub struct CreateTransactionRequest {
+    pub user_id: Uuid,
+    pub group_id: Uuid,
+    pub transaction_type: String,
+    pub description: String,
+    pub amount: Decimal,
+    pub currency_code: String,
+    pub date: DateTime<Utc>,
+    pub source_id: Option<Uuid>,
+    pub destination_id: Option<Uuid>,
+    pub category_name: Option<String>,
+    pub notes: Option<String>,
+    pub reconciled: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct UpdateTransactionRequest {
+    pub description: Option<String>,
+    pub amount: Option<Decimal>,
+    pub date: Option<DateTime<Utc>>,
+    pub transaction_type: Option<String>,
+    pub currency_code: Option<String>,
+    pub source_id: Option<Option<Uuid>>,
+    pub destination_id: Option<Option<Uuid>>,
+    pub category_name: Option<Option<String>>,
+    pub notes: Option<Option<String>>,
+    pub reconciled: Option<bool>,
+}
+
+#[async_trait]
+pub trait TransactionWriteRepository: Send + Sync {
+    async fn create(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        request: CreateTransactionRequest,
+    ) -> Result<TransactionRecord, RepoError>;
+
+    async fn update(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        transaction_id: Uuid,
+        user_id: Uuid,
+        request: UpdateTransactionRequest,
+    ) -> Result<TransactionRecord, RepoError>;
+
+    async fn hard_delete(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        transaction_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<TransactionRecord>, RepoError>;
+
+    async fn update_account_balances(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        updates: &[AccountBalanceUpdate],
+    ) -> Result<(), RepoError>;
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct PgTransactionRepository;
+
+#[async_trait]
+impl TransactionReadRepository for PgTransactionRepository {
+    async fn list_by_user(
+        &self,
+        pool: &PgPool,
+        user_id: Uuid,
+        filter: &TransactionFilter,
+    ) -> Result<Paginated<TransactionRecord>, RepoError> {
+        let offset = u64::from(filter.page.max(1) - 1) * u64::from(filter.limit);
+        let limit = i64::from(filter.limit);
+
+        let mut conditions = vec!["user_id = $1".to_string()];
+        let mut idx = 2;
+        if filter.start_date.is_some() {
+            conditions.push(format!("date >= ${idx}"));
+            idx += 1;
+        }
+        if filter.end_date.is_some() {
+            conditions.push(format!("date <= ${idx}"));
+            idx += 1;
+        }
+        if filter.transaction_type.is_some() {
+            conditions.push(format!("transaction_type = ${idx}"));
+            idx += 1;
+        }
+        let where_clause = conditions.join(" AND ");
+
+        let count_sql = format!("SELECT COUNT(*) FROM transaction_journals WHERE {where_clause}");
+        let total_records: (i64,) = {
+            let mut query = sqlx::query_as(&count_sql);
+            query = query.bind(user_id);
+            if let Some(ref start) = filter.start_date {
+                query = query.bind(start);
+            }
+            if let Some(ref end) = filter.end_date {
+                query = query.bind(end);
+            }
+            if let Some(ref t) = filter.transaction_type {
+                query = query.bind(t);
+            }
+            query.fetch_one(pool).await?
+        };
+
+        let list_sql = format!(
+            "SELECT {TRANSACTION_COLUMNS} FROM transaction_journals \
+             WHERE {where_clause} \
+             ORDER BY date DESC, id DESC \
+             LIMIT ${idx} OFFSET ${}",
+            idx + 1
+        );
+
+        let records = {
+            let mut query = sqlx::query_as::<_, TransactionRecord>(&list_sql);
+            query = query.bind(user_id);
+            if let Some(ref start) = filter.start_date {
+                query = query.bind(start);
+            }
+            if let Some(ref end) = filter.end_date {
+                query = query.bind(end);
+            }
+            if let Some(ref t) = filter.transaction_type {
+                query = query.bind(t);
+            }
+            query
+                .bind(limit)
+                .bind(offset as i64)
+                .fetch_all(pool)
+                .await?
+        };
+
+        Ok(Paginated {
+            total_records: total_records.0.max(0) as u64,
+            records,
+            current_page: u64::from(filter.page),
+            per_page: u64::from(filter.limit),
+        })
+    }
+
+    async fn find_by_id<'c, E>(
+        &self,
+        executor: E,
+        user_id: Uuid,
+        transaction_id: Uuid,
+    ) -> Result<Option<TransactionRecord>, RepoError>
+    where
+        E: Executor<'c, Database = Postgres> + Send,
+    {
+        let record = sqlx::query_as::<_, TransactionRecord>(&format!(
+            "SELECT {TRANSACTION_COLUMNS} FROM transaction_journals \
+             WHERE id = $1 AND user_id = $2",
+        ))
+        .bind(transaction_id)
+        .bind(user_id)
+        .fetch_optional(executor)
+        .await?;
+
+        Ok(record)
+    }
+
+    async fn list_by_account(
+        &self,
+        pool: &PgPool,
+        user_id: Uuid,
+        account_id: Uuid,
+        page: u32,
+        limit: u32,
+    ) -> Result<Paginated<TransactionRecord>, RepoError> {
+        let offset = u64::from(page.max(1) - 1) * u64::from(limit);
+        let limit_i64 = i64::from(limit);
+
+        let total_records: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM transaction_journals \
+             WHERE user_id = $1 AND (source_id = $2 OR destination_id = $2)",
+        )
+        .bind(user_id)
+        .bind(account_id)
+        .fetch_one(pool)
+        .await?;
+
+        let records = sqlx::query_as::<_, TransactionRecord>(&format!(
+            "SELECT {TRANSACTION_COLUMNS} FROM transaction_journals \
+             WHERE user_id = $1 AND (source_id = $2 OR destination_id = $2) \
+             ORDER BY date DESC, id DESC \
+             LIMIT $3 OFFSET $4",
+        ))
+        .bind(user_id)
+        .bind(account_id)
+        .bind(limit_i64)
+        .bind(offset as i64)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(Paginated {
+            total_records: total_records.0.max(0) as u64,
+            records,
+            current_page: u64::from(page),
+            per_page: u64::from(limit),
+        })
+    }
+}
+
+#[async_trait]
+impl TransactionWriteRepository for PgTransactionRepository {
+    async fn create(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        request: CreateTransactionRequest,
+    ) -> Result<TransactionRecord, RepoError> {
+        let record = sqlx::query_as::<_, TransactionRecord>(&format!(
+            "INSERT INTO transaction_journals \
+             (user_id, group_id, transaction_type, description, amount, currency_code, date, \
+              source_id, destination_id, category_name, notes, reconciled) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \
+             RETURNING {TRANSACTION_COLUMNS}",
+        ))
+        .bind(request.user_id)
+        .bind(request.group_id)
+        .bind(request.transaction_type)
+        .bind(request.description)
+        .bind(request.amount)
+        .bind(request.currency_code)
+        .bind(request.date)
+        .bind(request.source_id)
+        .bind(request.destination_id)
+        .bind(request.category_name)
+        .bind(request.notes)
+        .bind(request.reconciled)
+        .fetch_one(tx.as_mut())
+        .await?;
+
+        Ok(record)
+    }
+
+    async fn update(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        transaction_id: Uuid,
+        user_id: Uuid,
+        request: UpdateTransactionRequest,
+    ) -> Result<TransactionRecord, RepoError> {
+        use sqlx::QueryBuilder;
+
+        let mut builder: QueryBuilder<'_, Postgres> =
+            QueryBuilder::new("UPDATE transaction_journals SET ");
+
+        let mut sep = builder.separated(", ");
+
+        if let Some(v) = request.description {
+            sep.push("description = ");
+            sep.push_bind(v);
+        }
+        if let Some(v) = request.amount {
+            sep.push("amount = ");
+            sep.push_bind(v);
+        }
+        if let Some(v) = request.date {
+            sep.push("date = ");
+            sep.push_bind(v);
+        }
+        if let Some(v) = request.transaction_type {
+            sep.push("transaction_type = ");
+            sep.push_bind(v);
+        }
+        if let Some(v) = request.currency_code {
+            sep.push("currency_code = ");
+            sep.push_bind(v);
+        }
+        if let Some(ref v) = request.source_id {
+            if let Some(val) = v {
+                sep.push("source_id = ");
+                sep.push_bind(val);
+            } else {
+                sep.push("source_id = NULL");
+            }
+        }
+        if let Some(ref v) = request.destination_id {
+            if let Some(val) = v {
+                sep.push("destination_id = ");
+                sep.push_bind(val);
+            } else {
+                sep.push("destination_id = NULL");
+            }
+        }
+        if let Some(ref v) = request.category_name {
+            if let Some(val) = v {
+                sep.push("category_name = ");
+                sep.push_bind(val);
+            } else {
+                sep.push("category_name = NULL");
+            }
+        }
+        if let Some(ref v) = request.notes {
+            if let Some(val) = v {
+                sep.push("notes = ");
+                sep.push_bind(val);
+            } else {
+                sep.push("notes = NULL");
+            }
+        }
+        if let Some(v) = request.reconciled {
+            sep.push("reconciled = ");
+            sep.push_bind(v);
+        }
+
+        if builder.sql().ends_with("SET ") {
+            return Err(RepoError::Database(sqlx::Error::RowNotFound));
+        }
+
+        builder.push(" WHERE id = ");
+        builder.push_bind(transaction_id);
+        builder.push(" AND user_id = ");
+        builder.push_bind(user_id);
+        builder.push(" RETURNING ");
+        builder.push(TRANSACTION_COLUMNS);
+
+        let record = builder
+            .build_query_as::<TransactionRecord>()
+            .fetch_optional(tx.as_mut())
+            .await?;
+
+        record.ok_or(RepoError::Database(sqlx::Error::RowNotFound))
+    }
+
+    async fn hard_delete(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        transaction_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<TransactionRecord>, RepoError> {
+        let record = sqlx::query_as::<_, TransactionRecord>(&format!(
+            "DELETE FROM transaction_journals WHERE id = $1 AND user_id = $2 \
+             RETURNING {TRANSACTION_COLUMNS}",
+        ))
+        .bind(transaction_id)
+        .bind(user_id)
+        .fetch_optional(tx.as_mut())
+        .await?;
+
+        Ok(record)
+    }
+
+    async fn update_account_balances(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        updates: &[AccountBalanceUpdate],
+    ) -> Result<(), RepoError> {
+        for update in updates {
+            sqlx::query("UPDATE accounts SET current_balance = current_balance + $1 WHERE id = $2")
+                .bind(update.delta)
+                .bind(update.account_id)
+                .execute(tx.as_mut())
+                .await?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Repositories {
     pub token: PgTokenRepository,
     pub user: PgUserRepository,
     pub bootstrap: PgBootstrapKeyRepository,
     pub account: PgAccountRepository,
+    pub transaction: PgTransactionRepository,
     pub pool: PgPool,
 }
 
@@ -785,6 +1317,7 @@ impl Repositories {
             user: PgUserRepository,
             bootstrap: PgBootstrapKeyRepository,
             account: PgAccountRepository,
+            transaction: PgTransactionRepository,
             pool,
         }
     }

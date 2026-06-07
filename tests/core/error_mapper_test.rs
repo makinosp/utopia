@@ -27,3 +27,16 @@ fn maps_auth_to_401_reason_code() {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert!(body.message.contains("token_revoked"));
 }
+
+#[test]
+fn maps_conflict_to_409() {
+    let (status, body) = map_domain_error(DomainError::Conflict(
+        "A concurrent modification was detected. Please retry.".to_string(),
+    ));
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(
+        body.message,
+        "A concurrent modification was detected. Please retry."
+    );
+    assert!(body.errors.is_empty());
+}
