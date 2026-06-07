@@ -900,7 +900,7 @@ pub struct TransactionRecord {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AccountBalanceUpdate {
     pub account_id: Uuid,
     pub delta: Decimal,

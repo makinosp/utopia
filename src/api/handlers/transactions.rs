@@ -7,6 +7,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::core::auth::audit_logger::AuditLogger;
 use crate::core::auth::models::Principal;
 use crate::core::compatibility::envelope::{FireflyListEnvelope, FireflySingleEnvelope};
 use crate::core::compatibility::error_response::FireflyErrorResponse;
@@ -115,6 +116,14 @@ pub async fn create_transaction_handler(
         .await
         .map_err(map_domain_error_to_json)?;
 
+    state.audit_logger.emit(AuditLogger::new_event(
+        "transaction_created",
+        "success",
+        Some(principal.user_id),
+        None,
+        None,
+    ));
+
     Ok((
         StatusCode::CREATED,
         Json(FireflySingleEnvelope {
@@ -146,6 +155,14 @@ pub async fn update_transaction_handler(
         .await
         .map_err(map_domain_error_to_json)?;
 
+    state.audit_logger.emit(AuditLogger::new_event(
+        "transaction_updated",
+        "success",
+        Some(principal.user_id),
+        None,
+        None,
+    ));
+
     Ok(Json(FireflySingleEnvelope {
         data: FireflyTransactionResource::from_view(result),
     }))
@@ -164,6 +181,14 @@ pub async fn delete_transaction_handler(
         .delete_transaction(transaction_id, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
+
+    state.audit_logger.emit(AuditLogger::new_event(
+        "transaction_deleted",
+        "success",
+        Some(principal.user_id),
+        None,
+        None,
+    ));
 
     Ok(StatusCode::NO_CONTENT)
 }

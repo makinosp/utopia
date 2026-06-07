@@ -611,11 +611,11 @@ impl TransactionService {
             .lock_accounts_for_update(tx, principal.user_id, &lock_ids)
             .await
             .map_err(|e| {
-                // Detect deadlock (PostgreSQL error 40P01)
+                // Detect deadlock (PostgreSQL error 40P01) or serialization failure (40001)
                 let RepoError::Database(ref dbe) = e;
                 if let Some(pg_err) = dbe.as_database_error() {
                     if let Some(code) = pg_err.code() {
-                        if code.as_ref() == "40P01" {
+                        if code.as_ref() == "40P01" || code.as_ref() == "40001" {
                             return DomainError::Conflict(
                                 "A concurrent modification was detected. Please retry.".to_string(),
                             );
@@ -937,5 +937,101 @@ impl TransactionService {
             current_page: u64::from(page),
             per_page: u64::from(limit),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rust_decimal::Decimal;
+    use uuid::Uuid;
+
+    use super::*;
+
+    fn src() -> Uuid {
+        Uuid::from_u128(1)
+    }
+    fn dst() -> Uuid {
+        Uuid::from_u128(2)
+    }
+
+    #[test]
+    fn balance_impacts_withdrawal_decreases_source() {
+        let impacts = balance_impacts("withdrawal", Decimal::new(10000, 2), Some(src()), None);
+        assert_eq!(impacts.len(), 1);
+        assert_eq!(impacts[0].account_id, src());
+        assert_eq!(impacts[0].delta, Decimal::new(-10000, 2));
+    }
+
+    #[test]
+    fn balance_impacts_deposit_increases_destination() {
+        let impacts = balance_impacts("deposit", Decimal::new(5000, 2), None, Some(dst()));
+        assert_eq!(impacts.len(), 1);
+        assert_eq!(impacts[0].account_id, dst());
+        assert_eq!(impacts[0].delta, Decimal::new(5000, 2));
+    }
+
+    #[test]
+    fn balance_impacts_transfer_adjusts_both() {
+        let impacts = balance_impacts("transfer", Decimal::new(10000, 2), Some(src()), Some(dst()));
+        assert_eq!(impacts.len(), 2);
+        assert_eq!(impacts[0].account_id, src());
+        assert_eq!(impacts[0].delta, Decimal::new(-10000, 2));
+        assert_eq!(impacts[1].account_id, dst());
+        assert_eq!(impacts[1].delta, Decimal::new(10000, 2));
+    }
+
+    #[test]
+    fn reverse_balance_impacts_undoes_withdrawal() {
+        let impacts =
+            reverse_balance_impacts("withdrawal", Decimal::new(10000, 2), Some(src()), None);
+        assert_eq!(impacts.len(), 1);
+        assert_eq!(impacts[0].account_id, src());
+        assert_eq!(impacts[0].delta, Decimal::new(10000, 2));
+    }
+
+    #[test]
+    fn reverse_balance_impacts_undoes_transfer() {
+        let impacts =
+            reverse_balance_impacts("transfer", Decimal::new(10000, 2), Some(src()), Some(dst()));
+        assert_eq!(impacts.len(), 2);
+        assert_eq!(impacts[0].account_id, src());
+        assert_eq!(impacts[0].delta, Decimal::new(10000, 2));
+        assert_eq!(impacts[1].account_id, dst());
+        assert_eq!(impacts[1].delta, Decimal::new(-10000, 2));
+    }
+
+    #[test]
+    fn reverse_reverse_equals_original() {
+        let amount = Decimal::new(12345, 2);
+        for txn_type in &["withdrawal", "deposit", "transfer"] {
+            let original = balance_impacts(txn_type, amount, Some(src()), Some(dst()));
+            let reversed = reverse_balance_impacts(txn_type, amount, Some(src()), Some(dst()));
+            let double_reversed: Vec<AccountBalanceUpdate> = reversed
+                .into_iter()
+                .map(|u| AccountBalanceUpdate {
+                    account_id: u.account_id,
+                    delta: -u.delta,
+                })
+                .collect();
+            assert_eq!(
+                original, double_reversed,
+                "reverse(reverse(x)) != x for transaction_type={}",
+                txn_type
+            );
+        }
+    }
+
+    #[test]
+    fn balance_impacts_without_accounts_returns_empty() {
+        for txn_type in &["withdrawal", "deposit", "transfer"] {
+            let impacts = balance_impacts(txn_type, Decimal::new(100, 2), None, None);
+            assert!(impacts.is_empty(), "expected empty for {}", txn_type);
+        }
+    }
+
+    #[test]
+    fn unknown_type_returns_empty_impacts() {
+        let impacts = balance_impacts("unknown", Decimal::new(100, 2), Some(src()), Some(dst()));
+        assert!(impacts.is_empty());
     }
 }
