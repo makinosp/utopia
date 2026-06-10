@@ -15,10 +15,16 @@ pub struct AppConfig {
     pub log_level: String,
     pub bootstrap_key: String,
     pub bootstrap_user_email: String,
+    pub strict_ssl: bool,
 }
 
 impl AppConfig {
     pub fn from_env() -> anyhow::Result<Self> {
+        let strict_ssl = env::var("APP_STRICT_SSL")
+            .ok()
+            .map(|v| v == "1" || v.to_lowercase() == "true")
+            .unwrap_or(true);
+
         let config = Self {
             database_url: required("DATABASE_URL")?,
             argon2_memory_cost: parse_required("ARGON2_MEMORY_COST")?,
@@ -31,6 +37,7 @@ impl AppConfig {
             log_level: required("LOG_LEVEL")?,
             bootstrap_key: required("BOOTSTRAP_KEY")?,
             bootstrap_user_email: required("BOOTSTRAP_USER_EMAIL")?,
+            strict_ssl,
         };
 
         config.validate()?;
@@ -64,10 +71,12 @@ impl AppConfig {
             bail!("BOOTSTRAP_KEY must be at least 16 characters");
         }
 
-        if !self.database_url.contains("sslmode=require")
-            && !self.database_url.contains("ssl_mode=require")
-        {
-            bail!("DATABASE_URL must enforce TLS with sslmode=require");
+        if self.strict_ssl {
+            if !self.database_url.contains("sslmode=require")
+                && !self.database_url.contains("ssl_mode=require")
+            {
+                bail!("DATABASE_URL must enforce TLS with sslmode=require when APP_STRICT_SSL=true");
+            }
         }
 
         Ok(())

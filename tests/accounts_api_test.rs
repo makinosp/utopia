@@ -471,6 +471,7 @@ fn test_config(database_url: String) -> AppConfig {
         log_level: "info".to_string(),
         bootstrap_key: "bootstrap-test-key-1234".to_string(),
         bootstrap_user_email: "bootstrap@example.com".to_string(),
+        strict_ssl: false,
     }
 }
 
