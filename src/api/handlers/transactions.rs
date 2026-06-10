@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use serde::Deserialize;
@@ -36,7 +36,7 @@ pub struct AccountTransactionListRequest {
 
 pub async fn list_transactions_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Query(request): Query<TransactionListRequest>,
 ) -> Result<
     Json<FireflyListEnvelope<FireflyTransactionResource>>,
@@ -76,7 +76,7 @@ pub async fn list_transactions_handler(
 
 pub async fn get_transaction_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(transaction_id): Path<Uuid>,
 ) -> Result<
     Json<FireflySingleEnvelope<FireflyTransactionResource>>,
@@ -98,7 +98,7 @@ pub async fn get_transaction_handler(
 
 pub async fn create_transaction_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Json(request): Json<CreateTransactionRequest>,
 ) -> Result<
     (
@@ -134,7 +134,7 @@ pub async fn create_transaction_handler(
 
 pub async fn update_transaction_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(transaction_id): Path<Uuid>,
     Json(request): Json<UpdateTransactionRequest>,
 ) -> Result<
@@ -170,7 +170,7 @@ pub async fn update_transaction_handler(
 
 pub async fn delete_transaction_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(transaction_id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, Json<FireflyErrorResponse>)> {
     let service = TransactionService::new(
@@ -195,7 +195,7 @@ pub async fn delete_transaction_handler(
 
 pub async fn list_account_transactions_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(account_id): Path<Uuid>,
     Query(request): Query<AccountTransactionListRequest>,
 ) -> Result<
