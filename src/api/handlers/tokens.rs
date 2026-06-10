@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::extract::{Path, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::{header::HeaderName, HeaderMap, StatusCode};
 use axum::Json;
 use serde::Deserialize;
@@ -18,7 +18,7 @@ pub struct TokenRequest {
 
 pub async fn issue_token_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Json(request): Json<TokenRequest>,
 ) -> Result<
     Json<crate::core::auth::models::TokenIssuanceResponse>,
@@ -62,7 +62,7 @@ pub async fn bootstrap_issue_token_handler(
 
 pub async fn revoke_token_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(token_id): Path<Uuid>,
 ) -> Result<
     StatusCode,

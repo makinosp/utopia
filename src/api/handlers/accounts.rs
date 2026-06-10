@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use serde::Deserialize;
@@ -42,7 +42,7 @@ async fn primary_currency_code(
 
 pub async fn list_accounts_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Query(request): Query<AccountListRequest>,
 ) -> Result<
     Json<FireflyListEnvelope<FireflyAccountResource>>,
@@ -80,7 +80,7 @@ pub async fn list_accounts_handler(
 
 pub async fn get_account_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(account_id): Path<Uuid>,
 ) -> Result<
     Json<FireflySingleEnvelope<FireflyAccountResource>>,
@@ -102,7 +102,7 @@ pub async fn get_account_handler(
 
 pub async fn create_account_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Json(request): Json<CreateAccountRequest>,
 ) -> Result<
     (
@@ -135,7 +135,7 @@ pub async fn create_account_handler(
 
 pub async fn update_account_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(account_id): Path<Uuid>,
     Json(request): Json<UpdateAccountRequest>,
 ) -> Result<
@@ -158,7 +158,7 @@ pub async fn update_account_handler(
 
 pub async fn delete_account_handler(
     State(state): State<Arc<AppState>>,
-    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
+    Extension(principal): Extension<Principal>,
     Path(account_id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, Json<FireflyErrorResponse>)> {
     let service = AccountService::new(state.repositories.account.clone());
