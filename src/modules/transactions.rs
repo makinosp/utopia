@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, Transaction};
+use tracing::error;
 use uuid::Uuid;
 
 use crate::core::auth::models::Principal;
@@ -684,7 +685,10 @@ impl TransactionService {
         let group_id = req.group_id.unwrap_or_else(Uuid::new_v4);
         let date = req.date.unwrap_or_else(Utc::now);
 
-        let mut tx = pool.begin().await.map_err(|_| DomainError::Persistence)?;
+        let mut tx = pool.begin().await.map_err(|e| {
+            error!(db_error = %e, "failed to begin transaction");
+            DomainError::Persistence
+        })?;
 
         // Validate accounts and lock them with SELECT FOR UPDATE
         self.validate_and_lock_accounts(
@@ -716,7 +720,10 @@ impl TransactionService {
                 },
             )
             .await
-            .map_err(|_| DomainError::Persistence)?;
+            .map_err(|e| {
+                error!(db_error = %e, "failed to create transaction record");
+                DomainError::Persistence
+            })?;
 
         // Update account balances atomically
         let balance_updates = balance_impacts(
@@ -729,10 +736,16 @@ impl TransactionService {
             self.write_repo
                 .update_account_balances(&mut tx, &balance_updates)
                 .await
-                .map_err(|_| DomainError::Persistence)?;
+                .map_err(|e| {
+                    error!(db_error = %e, "failed to update account balances");
+                    DomainError::Persistence
+                })?;
         }
 
-        tx.commit().await.map_err(|_| DomainError::Persistence)?;
+        tx.commit().await.map_err(|e| {
+            error!(db_error = %e, "failed to commit transaction");
+            DomainError::Persistence
+        })?;
 
         let mut view = TransactionView::from(record);
         self.resolve_account_names(std::slice::from_mut(&mut view), pool)

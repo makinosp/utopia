@@ -471,13 +471,13 @@ impl AccountReadRepository for PgAccountRepository {
 
         let mut query_builder = sqlx::query_as::<_, AccountRecord>(&query);
 
-        // Bind user_id as the last parameter
-        query_builder = query_builder.bind(user_id);
-
-        // Bind account_ids
+        // Bind account_ids (match $1, $2, ... placeholders)
         for account_id in account_ids {
             query_builder = query_builder.bind(account_id);
         }
+
+        // Bind user_id (match ${account_ids.len() + 1} placeholder)
+        query_builder = query_builder.bind(user_id);
 
         let records = query_builder.fetch_all(executor).await?;
 
@@ -591,7 +591,7 @@ impl AccountReadRepository for PgAccountRepository {
         // Build a parameterized list of account IDs
         let mut ids = builder.separated(", ");
         for id in account_ids {
-            ids.push_bind_unseparated(*id);
+            ids.push_bind(*id);
         }
         ids.push_unseparated(")");
         builder.push(" AND deleted_at IS NULL FOR UPDATE");
