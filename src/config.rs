@@ -71,14 +71,11 @@ impl AppConfig {
             bail!("BOOTSTRAP_KEY must be at least 16 characters");
         }
 
-        if self.strict_ssl {
-            if !self.database_url.contains("sslmode=require")
-                && !self.database_url.contains("ssl_mode=require")
-            {
-                bail!(
-                    "DATABASE_URL must enforce TLS with sslmode=require when APP_STRICT_SSL=true"
-                );
-            }
+        if self.strict_ssl
+            && !self.database_url.contains("sslmode=require")
+            && !self.database_url.contains("ssl_mode=require")
+        {
+            bail!("DATABASE_URL must enforce TLS with sslmode=require when APP_STRICT_SSL=true");
         }
 
         Ok(())
