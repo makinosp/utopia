@@ -11,6 +11,9 @@ use crate::api::handlers::accounts::{
     create_account_handler, delete_account_handler, get_account_handler, list_accounts_handler,
     update_account_handler,
 };
+use crate::api::handlers::metadata::{
+    get_about_handler, get_about_user_handler, list_currencies_handler,
+};
 use crate::api::handlers::tokens::{
     bootstrap_issue_token_handler, issue_token_handler, revoke_token_handler,
 };
@@ -44,6 +47,9 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         )
         .route("/api/v1/tokens", post(issue_token_handler))
         .route("/api/v1/tokens/:id", delete(revoke_token_handler))
+        .route("/api/v1/currencies", get(list_currencies_handler))
+        .route("/api/v1/about", get(get_about_handler))
+        .route("/api/v1/about/user", get(get_about_user_handler))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

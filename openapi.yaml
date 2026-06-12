@@ -349,6 +349,62 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /api/v1/currencies:
+    get:
+      tags:
+        - Currencies
+      summary: List currencies
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Currency list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflyListEnvelopeCurrency'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/about:
+    get:
+      tags:
+        - About
+      summary: Get system information
+      responses:
+        '200':
+          description: System information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflyListEnvelopeSystemInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/about/user:
+    get:
+      tags:
+        - About
+      summary: Get authenticated user profile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireflySingleEnvelopeUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   parameters:
     Page:
@@ -932,3 +988,156 @@ components:
         reconciled:
           type: boolean
           nullable: true
+
+    FireflyCurrencyAttributes:
+      type: object
+      required:
+        - created_at
+        - updated_at
+        - code
+        - name
+        - symbol
+        - decimal_places
+        - default
+        - enabled
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        code:
+          type: string
+        name:
+          type: string
+        symbol:
+          type: string
+        decimal_places:
+          type: integer
+        default:
+          type: boolean
+        enabled:
+          type: boolean
+
+    FireflyCurrencyResource:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - links
+      properties:
+        type:
+          type: string
+          example: currencies
+        id:
+          type: string
+        attributes:
+          $ref: '#/components/schemas/FireflyCurrencyAttributes'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/FireflyLink'
+
+    FireflyListEnvelopeCurrency:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FireflyCurrencyResource'
+        meta:
+          $ref: '#/components/schemas/FireflyListMeta'
+
+    FireflyUserAttributes:
+      type: object
+      required:
+        - created_at
+        - updated_at
+        - email
+        - blocked
+        - blocked_code
+        - role
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        email:
+          type: string
+        blocked:
+          type: boolean
+        blocked_code:
+          type: string
+          nullable: true
+        role:
+          type: string
+
+    FireflyUserResource:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          example: users
+        id:
+          type: string
+          format: uuid
+        attributes:
+          $ref: '#/components/schemas/FireflyUserAttributes'
+
+    FireflySingleEnvelopeUser:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/FireflyUserResource'
+
+    FireflySystemInfoAttributes:
+      type: object
+      required:
+        - title
+        - value
+      properties:
+        title:
+          type: string
+        value:
+          type: string
+
+    FireflySystemInfoResource:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          example: system_info
+        id:
+          type: integer
+        attributes:
+          $ref: '#/components/schemas/FireflySystemInfoAttributes'
+
+    FireflyListEnvelopeSystemInfo:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FireflySystemInfoResource'
+        meta:
+          $ref: '#/components/schemas/FireflyListMeta'
