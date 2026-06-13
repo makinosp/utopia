@@ -3,17 +3,11 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::core::auth::models::Principal;
 use crate::core::compatibility::decimal_amount::DecimalAmount;
-use crate::core::compatibility::pagination::Paginated;
 use crate::core::error_mapping::mapper::DomainError;
-use crate::core::persistence::repository::{
-    AccountListFilter, AccountReadRepository, AccountRecord, AccountWriteRepository,
-    PgAccountRepository,
-};
+use crate::core::persistence::repository::AccountRecord;
 
 pub const DEFAULT_PAGE: u32 = 1;
 pub const DEFAULT_LIMIT: u32 = 50;
@@ -381,10 +375,10 @@ fn currency_name_from_code(code: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
-// Service
+// Validation helpers
 // ---------------------------------------------------------------------------
 
-fn parse_page(raw: Option<&str>) -> Result<u32, DomainError> {
+pub fn parse_page(raw: Option<&str>) -> Result<u32, DomainError> {
     parse_positive_u32(
         raw,
         DEFAULT_PAGE,
@@ -393,7 +387,7 @@ fn parse_page(raw: Option<&str>) -> Result<u32, DomainError> {
     )
 }
 
-fn parse_limit(raw: Option<&str>) -> Result<u32, DomainError> {
+pub fn parse_limit(raw: Option<&str>) -> Result<u32, DomainError> {
     let limit = parse_positive_u32(
         raw,
         DEFAULT_LIMIT,
@@ -437,7 +431,7 @@ fn parse_positive_u32(
     Ok(parsed)
 }
 
-fn normalize_account_type(raw: Option<&str>) -> Result<Option<String>, DomainError> {
+pub fn normalize_account_type(raw: Option<&str>) -> Result<Option<String>, DomainError> {
     let Some(raw) = raw else {
         return Ok(None);
     };
@@ -458,7 +452,7 @@ fn normalize_account_type(raw: Option<&str>) -> Result<Option<String>, DomainErr
     Ok(Some(normalized))
 }
 
-fn normalize_account_type_create(raw: &str) -> Result<String, DomainError> {
+pub fn normalize_account_type_create(raw: &str) -> Result<String, DomainError> {
     let normalized = raw.trim().to_ascii_lowercase();
     if normalized.is_empty() || !ALLOWED_ACCOUNT_TYPES.contains(&normalized.as_str()) {
         return Err(validation_error("type", "The selected type is invalid."));
@@ -466,227 +460,8 @@ fn normalize_account_type_create(raw: &str) -> Result<String, DomainError> {
     Ok(normalized)
 }
 
-fn validation_error(field: &str, message: &str) -> DomainError {
+pub fn validation_error(field: &str, message: &str) -> DomainError {
     let mut fields = HashMap::new();
     fields.insert(field.to_string(), vec![message.to_string()]);
     DomainError::Validation(fields)
-}
-
-#[derive(Debug, Clone)]
-pub struct AccountService {
-    read_repo: PgAccountRepository,
-    write_repo: PgAccountRepository,
-}
-
-impl AccountService {
-    pub fn new(repository: PgAccountRepository) -> Self {
-        Self {
-            read_repo: repository.clone(),
-            write_repo: repository,
-        }
-    }
-
-    /// List accounts for the authenticated user with optional type filter and pagination.
-    pub async fn list_accounts(
-        &self,
-        query: AccountListQuery,
-        principal: &Principal,
-        pool: &PgPool,
-    ) -> Result<Paginated<AccountView>, DomainError> {
-        let filter = AccountListFilter {
-            page: query.page,
-            limit: query.limit,
-            account_type: query.account_type,
-        };
-        let accounts = self
-            .read_repo
-            .list_by_user(pool, principal.user_id, &filter)
-            .await
-            .map_err(|_| DomainError::Persistence)?;
-        Ok(Paginated {
-            total_records: accounts.total_records,
-            records: accounts
-                .records
-                .into_iter()
-                .map(AccountView::from)
-                .collect(),
-            current_page: accounts.current_page,
-            per_page: accounts.per_page,
-        })
-    }
-
-    /// Get a single account by ID (ownership enforced by repository).
-    pub async fn get_account(
-        &self,
-        account_id: Uuid,
-        principal: &Principal,
-        pool: &PgPool,
-    ) -> Result<AccountView, DomainError> {
-        self.read_repo
-            .find_by_id(pool, principal.user_id, account_id)
-            .await
-            .map_err(|_| DomainError::Persistence)?
-            .map(AccountView::from)
-            .ok_or(DomainError::NotFound)
-    }
-
-    /// Create a new account with optional opening balance.
-    pub async fn create_account(
-        &self,
-        req: CreateAccountRequest,
-        principal: &Principal,
-        pool: &PgPool,
-    ) -> Result<AccountView, DomainError> {
-        let normalized_type = normalize_account_type_create(&req.account_type)?;
-        let currency_code = req.currency_code.ok_or_else(|| {
-            validation_error("currency_code", "The currency code field is required.")
-        })?;
-        let opening_balance = req.opening_balance.unwrap_or(Decimal::ZERO);
-        let opening_balance_date = req.opening_balance_date;
-        let virtual_balance = req.virtual_balance.unwrap_or(Decimal::ZERO);
-
-        // Asset accounts require account_role
-        if normalized_type == "asset" && req.account_role.is_none() {
-            let mut fields = HashMap::new();
-            fields.insert(
-                "account_role".to_string(),
-                vec!["The account role field is required for asset accounts.".to_string()],
-            );
-            return Err(DomainError::Validation(fields));
-        }
-
-        let mut tx = pool.begin().await.map_err(|_| DomainError::Persistence)?;
-
-        let record = self
-            .write_repo
-            .create(
-                &mut tx,
-                principal.user_id,
-                &normalized_type,
-                &req.name,
-                &currency_code,
-                opening_balance,
-                opening_balance_date,
-                req.active.unwrap_or(true),
-                req.include_net_worth.unwrap_or(true),
-                req.account_role.as_deref(),
-                req.iban.as_deref(),
-                req.bic.as_deref(),
-                req.account_number.as_deref(),
-                req.notes.as_deref(),
-                virtual_balance,
-                req.liability_type.as_deref(),
-                req.liability_direction.as_deref(),
-                req.interest.as_deref(),
-                req.interest_period.as_deref(),
-                None, // cc_type
-                None, // cc_monthly_payment_date
-                opening_balance_date,
-            )
-            .await
-            .map_err(|e| map_repo_error(&e))?;
-
-        tx.commit().await.map_err(|_| DomainError::Persistence)?;
-        Ok(AccountView::from(record))
-    }
-
-    /// Update an existing account.
-    pub async fn update_account(
-        &self,
-        account_id: Uuid,
-        req: UpdateAccountRequest,
-        principal: &Principal,
-        pool: &PgPool,
-    ) -> Result<AccountView, DomainError> {
-        // Verify ownership first
-        self.read_repo
-            .find_by_id(pool, principal.user_id, account_id)
-            .await
-            .map_err(|_| DomainError::Persistence)?
-            .ok_or(DomainError::NotFound)?;
-
-        let mut tx = pool.begin().await.map_err(|_| DomainError::Persistence)?;
-
-        let record = self
-            .write_repo
-            .update(
-                &mut tx,
-                account_id,
-                principal.user_id,
-                req.name.as_deref(),
-                req.account_type.as_deref(),
-                req.currency_code.as_deref(),
-                req.active,
-                req.include_net_worth,
-                req.account_role.as_ref().map(|v| v.as_deref()),
-                req.iban.as_ref().map(|v| v.as_deref()),
-                req.bic.as_ref().map(|v| v.as_deref()),
-                req.account_number.as_ref().map(|v| v.as_deref()),
-                req.notes.as_ref().map(|v| v.as_deref()),
-                req.virtual_balance,
-                req.liability_type.as_ref().map(|v| v.as_deref()),
-                req.liability_direction.as_ref().map(|v| v.as_deref()),
-                req.interest.as_ref().map(|v| v.as_deref()),
-                req.interest_period.as_ref().map(|v| v.as_deref()),
-                None, // cc_type
-                None, // cc_monthly_payment_date
-                req.opening_balance_date.as_ref().map(|v| *v),
-            )
-            .await
-            .map_err(|e| map_repo_error(&e))?;
-
-        tx.commit().await.map_err(|_| DomainError::Persistence)?;
-        Ok(AccountView::from(record))
-    }
-
-    /// Delete an account.
-    pub async fn delete_account(
-        &self,
-        account_id: Uuid,
-        principal: &Principal,
-        pool: &PgPool,
-    ) -> Result<(), DomainError> {
-        // Verify ownership first
-        self.read_repo
-            .find_by_id(pool, principal.user_id, account_id)
-            .await
-            .map_err(|_| DomainError::Persistence)?
-            .ok_or(DomainError::NotFound)?;
-
-        let mut tx = pool.begin().await.map_err(|_| DomainError::Persistence)?;
-
-        let deleted = self
-            .write_repo
-            .hard_delete(&mut tx, account_id, principal.user_id)
-            .await
-            .map_err(|_| DomainError::Persistence)?;
-
-        if !deleted {
-            return Err(DomainError::NotFound);
-        }
-
-        tx.commit().await.map_err(|_| DomainError::Persistence)?;
-        Ok(())
-    }
-}
-
-fn map_repo_error(err: &crate::core::persistence::repository::RepoError) -> DomainError {
-    match err {
-        crate::core::persistence::repository::RepoError::Database(e) => {
-            if let Some(pg_err) = e.as_database_error() {
-                if let Some(code) = pg_err.code() {
-                    // 23505 = unique_violation (duplicate name)
-                    if code.as_ref() == "23505" {
-                        let mut fields = HashMap::new();
-                        fields.insert(
-                            "name".to_string(),
-                            vec!["The name has already been taken.".to_string()],
-                        );
-                        return DomainError::Validation(fields);
-                    }
-                }
-            }
-            DomainError::Persistence
-        }
-    }
 }

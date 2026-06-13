@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use serde::Deserialize;
@@ -22,8 +22,7 @@ use crate::core::compatibility::pagination::Paginated;
 use crate::core::error_mapping::mapper::{map_domain_error, DomainError};
 use crate::core::persistence::repository::UserReadRepository;
 use crate::modules::accounts::{
-    AccountListQuery, AccountService, CreateAccountRequest, FireflyAccountResource,
-    UpdateAccountRequest,
+    AccountListQuery, CreateAccountRequest, FireflyAccountResource, UpdateAccountRequest,
 };
 
 async fn primary_currency_code(
@@ -42,7 +41,7 @@ async fn primary_currency_code(
 
 pub async fn list_accounts_handler(
     State(state): State<Arc<AppState>>,
-    Extension(principal): Extension<Principal>,
+    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Query(request): Query<AccountListRequest>,
 ) -> Result<
     Json<FireflyListEnvelope<FireflyAccountResource>>,
@@ -58,8 +57,8 @@ pub async fn list_accounts_handler(
     )
     .map_err(map_domain_error_to_json)?;
 
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .list_accounts(query, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -80,7 +79,7 @@ pub async fn list_accounts_handler(
 
 pub async fn get_account_handler(
     State(state): State<Arc<AppState>>,
-    Extension(principal): Extension<Principal>,
+    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Path(account_id): Path<Uuid>,
 ) -> Result<
     Json<FireflySingleEnvelope<FireflyAccountResource>>,
@@ -89,8 +88,8 @@ pub async fn get_account_handler(
     let primary_currency_code = primary_currency_code(&state, &principal)
         .await
         .map_err(map_domain_error_to_json)?;
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .get_account(account_id, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -102,7 +101,7 @@ pub async fn get_account_handler(
 
 pub async fn create_account_handler(
     State(state): State<Arc<AppState>>,
-    Extension(principal): Extension<Principal>,
+    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Json(request): Json<CreateAccountRequest>,
 ) -> Result<
     (
@@ -119,8 +118,8 @@ pub async fn create_account_handler(
         request.currency_code = Some(primary_currency_code.clone());
     }
 
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .create_account(request, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -135,7 +134,7 @@ pub async fn create_account_handler(
 
 pub async fn update_account_handler(
     State(state): State<Arc<AppState>>,
-    Extension(principal): Extension<Principal>,
+    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Path(account_id): Path<Uuid>,
     Json(request): Json<UpdateAccountRequest>,
 ) -> Result<
@@ -145,8 +144,8 @@ pub async fn update_account_handler(
     let primary_currency_code = primary_currency_code(&state, &principal)
         .await
         .map_err(map_domain_error_to_json)?;
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .update_account(account_id, request, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -158,11 +157,11 @@ pub async fn update_account_handler(
 
 pub async fn delete_account_handler(
     State(state): State<Arc<AppState>>,
-    Extension(principal): Extension<Principal>,
+    axum::extract::Extension(principal): axum::extract::Extension<Principal>,
     Path(account_id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, Json<FireflyErrorResponse>)> {
-    let service = AccountService::new(state.repositories.account.clone());
-    service
+    state
+        .account_service
         .delete_account(account_id, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;

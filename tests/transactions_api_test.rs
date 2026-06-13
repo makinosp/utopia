@@ -17,6 +17,7 @@ use utopia::core::auth::metrics::PrometheusMetrics;
 use utopia::core::auth::models::{Principal, UserRecord};
 use utopia::core::auth::service::TokenService;
 use utopia::core::persistence::repository::Repositories;
+use utopia::modules::accounts::AccountServiceImpl;
 
 fn test_config(database_url: String) -> AppConfig {
     AppConfig {
@@ -47,6 +48,8 @@ fn build_test_state(pool: sqlx::PgPool, config: AppConfig) -> Arc<AppState> {
         Arc::clone(&metrics),
     );
 
+    let account_service = Arc::new(AccountServiceImpl::new(repositories.account.clone()));
+
     Arc::new(AppState {
         config,
         repositories,
@@ -54,6 +57,7 @@ fn build_test_state(pool: sqlx::PgPool, config: AppConfig) -> Arc<AppState> {
         metrics,
         audit_logger: AuditLogger,
         token_service,
+        account_service,
     })
 }
 

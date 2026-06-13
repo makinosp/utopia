@@ -10,6 +10,7 @@ use crate::core::auth::metrics::PrometheusMetrics;
 use crate::core::auth::service::TokenService;
 use crate::core::persistence::db::create_pool;
 use crate::core::persistence::repository::Repositories;
+use crate::modules::accounts::{AccountService, AccountServiceImpl};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -20,6 +21,7 @@ pub struct AppState {
     pub metrics: Arc<PrometheusMetrics>,
     pub audit_logger: AuditLogger,
     pub token_service: TokenService,
+    pub account_service: Arc<dyn AccountService>,
 }
 
 pub async fn build_app(config: AppConfig) -> anyhow::Result<axum::Router> {
@@ -42,6 +44,8 @@ pub async fn build_app(config: AppConfig) -> anyhow::Result<axum::Router> {
         Arc::clone(&metrics),
     );
 
+    let account_service = Arc::new(AccountServiceImpl::new(repositories.account.clone()));
+
     let state = Arc::new(AppState {
         config,
         repositories,
@@ -49,6 +53,7 @@ pub async fn build_app(config: AppConfig) -> anyhow::Result<axum::Router> {
         metrics: Arc::clone(&metrics),
         audit_logger,
         token_service,
+        account_service,
     });
 
     Ok(build_router(state))
