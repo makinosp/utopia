@@ -545,43 +545,40 @@ impl TransactionService {
         destination_id: Option<Uuid>,
     ) -> Result<(), DomainError> {
         match transaction_type {
-            "withdrawal" => {
-                if source_id.is_none() {
-                    return Err(validation_error(
-                        "source_id",
-                        "The source account is required for withdrawals.",
-                    ));
-                }
+            "withdrawal" if source_id.is_none() => {
+                return Err(validation_error(
+                    "source_id",
+                    "The source account is required for withdrawals.",
+                ));
             }
-            "deposit" => {
-                if destination_id.is_none() {
-                    return Err(validation_error(
-                        "destination_id",
-                        "The destination account is required for deposits.",
-                    ));
-                }
+            "deposit" if destination_id.is_none() => {
+                return Err(validation_error(
+                    "destination_id",
+                    "The destination account is required for deposits.",
+                ));
             }
-            "transfer" => {
-                if source_id.is_none() {
-                    return Err(validation_error(
-                        "source_id",
-                        "The source account is required for transfers.",
-                    ));
-                }
-                if destination_id.is_none() {
-                    return Err(validation_error(
-                        "destination_id",
-                        "The destination account is required for transfers.",
-                    ));
-                }
-                if source_id == destination_id {
-                    return Err(validation_error(
-                        "destination_id",
-                        "Source and destination must be different for transfers.",
-                    ));
-                }
+            "transfer" if source_id.is_none() => {
+                return Err(validation_error(
+                    "source_id",
+                    "The source account is required for transfers.",
+                ));
             }
             _ => {}
+        }
+
+        if transaction_type == "transfer" {
+            if destination_id.is_none() {
+                return Err(validation_error(
+                    "destination_id",
+                    "The destination account is required for transfers.",
+                ));
+            }
+            if source_id == destination_id {
+                return Err(validation_error(
+                    "destination_id",
+                    "Source and destination must be different for transfers.",
+                ));
+            }
         }
 
         // Collect unique account IDs for locking
