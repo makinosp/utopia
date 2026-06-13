@@ -22,8 +22,7 @@ use crate::core::compatibility::pagination::Paginated;
 use crate::core::error_mapping::mapper::{map_domain_error, DomainError};
 use crate::core::persistence::repository::UserReadRepository;
 use crate::modules::accounts::{
-    AccountListQuery, AccountService, CreateAccountRequest, FireflyAccountResource,
-    UpdateAccountRequest,
+    AccountListQuery, CreateAccountRequest, FireflyAccountResource, UpdateAccountRequest,
 };
 
 async fn primary_currency_code(
@@ -58,8 +57,8 @@ pub async fn list_accounts_handler(
     )
     .map_err(map_domain_error_to_json)?;
 
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .list_accounts(query, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -89,8 +88,8 @@ pub async fn get_account_handler(
     let primary_currency_code = primary_currency_code(&state, &principal)
         .await
         .map_err(map_domain_error_to_json)?;
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .get_account(account_id, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -119,8 +118,8 @@ pub async fn create_account_handler(
         request.currency_code = Some(primary_currency_code.clone());
     }
 
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .create_account(request, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -145,8 +144,8 @@ pub async fn update_account_handler(
     let primary_currency_code = primary_currency_code(&state, &principal)
         .await
         .map_err(map_domain_error_to_json)?;
-    let service = AccountService::new(state.repositories.account.clone());
-    let result = service
+    let result = state
+        .account_service
         .update_account(account_id, request, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
@@ -161,8 +160,8 @@ pub async fn delete_account_handler(
     Extension(principal): Extension<Principal>,
     Path(account_id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, Json<FireflyErrorResponse>)> {
-    let service = AccountService::new(state.repositories.account.clone());
-    service
+    state
+        .account_service
         .delete_account(account_id, &principal, &state.repositories.pool)
         .await
         .map_err(map_domain_error_to_json)?;
