@@ -729,3 +729,21 @@ stage executed with Docker-based integration testcontainers.
 **User Input**: (stage transition from Workflow Planning)
 **AI Response**: NFR Requirements for auth-enhancement started. All 8 plan answers already provided in `auth-enhancement-nfr-requirements-plan.md`. Verifying answers and generating NFR requirements artifacts.
 **Context**: NFR Requirements in progress; generating artifacts.
+
+---
+
+## CONSTRUCTION — NFR Requirements Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: NFR Requirements for auth-enhancement approved. Marked NFR Requirements complete and transitioned to NFR Design stage.
+**Context**: NFR Requirements approval gate passed.
+
+---
+
+## CONSTRUCTION — NFR Design Start (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: (stage transition from NFR Requirements)
+**AI Response**: NFR Design for auth-enhancement started. Creating nfr-design plan with questions for rate limiting design patterns, logical component integration, and test architecture. Awaiting user answers.
+**Context**: NFR Design plan created; waiting for user input.
