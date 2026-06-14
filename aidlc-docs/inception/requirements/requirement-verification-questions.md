@@ -99,6 +99,17 @@ X) Other (please describe after [Answer]: tag below)
 
 ---
 
+## Question: Security Extensions
+Should security extension rules be enforced for this project?
+
+A) Yes — enforce all SECURITY rules as blocking constraints (recommended for production-grade applications)
+B) No — skip all SECURITY rules (suitable for PoCs, prototypes, and experimental projects)
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: A
+
+---
+
 ## Question: Property-Based Testing Extension
 Should property-based testing (PBT) rules be enforced for this project?
 
@@ -107,4 +118,62 @@ B) Partial — enforce PBT rules only for pure functions and serialization round
 C) No — skip all PBT rules (suitable for simple CRUD applications, UI-only projects, or thin integration layers with no significant business logic)
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]: B — Enforce PBT rules only for pure functions and serialization round-trips, especially for monetary calculations, aggregation logic, and API payload round-trip consistency.
+[Answer]: B
+
+---
+
+# US-021 / US-022 — Authentication Feature Requirements
+
+These questions are for implementing **US-021** (Obtain Personal Access Token) and **US-022** (Reject Unauthenticated Requests).
+
+**Existing Auth Infrastructure**: Auth middleware with bearer validation (Argon2id + SHA256), token cache (positive/negative), audit logging, Prometheus metrics, `POST /api/v1/tokens`, `DELETE /api/v1/tokens/{id}`, `POST /api/v1/bootstrap/tokens`, and Firefly-III-compatible 401 error responses are already implemented. These questions focus on remaining gaps.
+
+## Question A1
+US-021 states: "Token issuance endpoint or mechanism exists and is documented." Authenticated `POST /api/v1/tokens` and bootstrap `POST /api/v1/bootstrap/tokens` exist. What additional work is needed?
+
+A) The existing endpoints are sufficient — ensure OpenAPI spec and developer docs cover them
+
+B) Add a token **list** endpoint (`GET /api/v1/tokens`) so users can see their active tokens
+
+C) Add both a list endpoint AND developer documentation (e.g., a README section)
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: A
+
+## Question A2
+US-022 states: "All protected endpoints return HTTP 401 with a Firefly-III compatible error body." The auth middleware already returns 401 for all routes except `/api/v1/bootstrap/tokens` and `/metrics`. Any endpoints that should be explicitly excluded from auth?
+
+A) No — current setup is correct
+
+B) Yes — additional endpoints should be public (please describe)
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: A
+
+## Question A3
+Should we add test coverage specifically for these stories?
+
+A) Yes — add integration tests for token issuance, revocation, and 401 rejection
+
+B) No — existing tests sufficiently cover auth scenarios
+
+C) Yes — focused unit tests for parse_bearer edge cases and cache invalidation after revocation
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: A
+
+## Question A4
+Any rate-limiting or brute-force protection for token issuance endpoint?
+
+A) No — token issuance is authenticated and admin-controlled
+
+B) Yes — rate limit on `POST /api/v1/tokens` (e.g., max N tokens/hour/user)
+
+C) Yes — rate limit on bootstrap token endpoint to prevent brute-force of bootstrap key
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: C - Enforce PBT rules only for pure functions and serialization round-trips, especially for monetary calculations, aggregation logic, and API payload round-trip consistency.
