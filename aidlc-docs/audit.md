@@ -711,3 +711,21 @@ stage executed with Docker-based integration testcontainers.
 **Context**: Requirements Analysis in progress. Waiting for user to fill in questions.
 
 ## **Timestamp**: 2026-06-11T00:00:00Z **User Input**: "CI Phase 2をスキップして次に進みたい。" **AI Response**: CI Phase 2 Hardening marked as SKIPPED in aidlc-state.md. Current stage set to COMPLETED. All AI-DLC phases and post-workflow enhancements have been resolved. **Context**: User decision to skip CI Phase 2 and move forward.
+
+---
+
+## CONSTRUCTION — Workflow Planning Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: "Using AI-DLC, 承認して続行します。"
+**AI Response**: Workflow Planning for US-021/US-022 approved. Execution plan confirmed: NFR Requirements → NFR Design → Code Generation → Build & Test. Transitioning to NFR Requirements stage. Plan answers in `auth-enhancement-nfr-requirements-plan.md` already completed.
+**Context**: Workflow Planning approval gate passed; transition to NFR Requirements.
+
+---
+
+## CONSTRUCTION — NFR Requirements Start (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: (stage transition from Workflow Planning)
+**AI Response**: NFR Requirements for auth-enhancement started. All 8 plan answers already provided in `auth-enhancement-nfr-requirements-plan.md`. Verifying answers and generating NFR requirements artifacts.
+**Context**: NFR Requirements in progress; generating artifacts.
