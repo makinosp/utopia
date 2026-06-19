@@ -6,12 +6,40 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::core::compatibility::decimal_amount::DecimalAmount;
+use crate::core::compatibility::pagination::{DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT};
 use crate::core::error_mapping::mapper::DomainError;
 use crate::core::persistence::repository::AccountRecord;
 
-pub const DEFAULT_PAGE: u32 = 1;
-pub const DEFAULT_LIMIT: u32 = 50;
-pub const MAX_LIMIT: u32 = 100;
+// Basic account types (core types) - documented for reference
+#[allow(dead_code)]
+const BASIC_ACCOUNT_TYPES: &[&str] = &[
+    "asset",
+    "cash",
+    "expense",
+    "revenue",
+    "special",
+    "hidden",
+    "liability",
+];
+
+// Extended account types (Firefly-III specific variations) - documented for reference
+#[allow(dead_code)]
+const EXTENDED_ACCOUNT_TYPES: &[&str] = &[
+    "liabilities",
+    "credit card",
+    "default account",
+    "cash account",
+    "asset account",
+    "expense account",
+    "revenue account",
+    "initial balance account",
+    "beneficiary account",
+    "import account",
+    "reconciliation account",
+    "loan",
+    "debt",
+    "mortgage",
+];
 
 const ALLOWED_ACCOUNT_TYPES: &[&str] = &[
     "asset",
@@ -277,8 +305,11 @@ impl FireflyAccountResource {
     pub fn from_view(view: AccountView, primary_currency_code: &str) -> Self {
         let currency_symbol = currency_symbol_from_code(&view.currency_code);
         let currency_name = currency_name_from_code(&view.currency_code);
+        let currency_decimal_places = currency_decimal_places_from_code(&view.currency_code);
         let primary_currency_symbol = currency_symbol_from_code(primary_currency_code);
         let primary_currency_name = currency_name_from_code(primary_currency_code);
+        let primary_currency_decimal_places =
+            currency_decimal_places_from_code(primary_currency_code);
 
         Self {
             resource_type: "accounts".to_string(),
@@ -294,11 +325,11 @@ impl FireflyAccountResource {
                 order: view.order,
                 currency_name: Some(currency_name),
                 currency_symbol: Some(currency_symbol),
-                currency_decimal_places: 2,
+                currency_decimal_places: currency_decimal_places as i32,
                 primary_currency_code: primary_currency_code.to_string(),
                 primary_currency_name,
                 primary_currency_symbol,
-                primary_currency_decimal_places: 2,
+                primary_currency_decimal_places: primary_currency_decimal_places as i32,
                 initial_balance: Some(DecimalAmount(view.initial_balance)),
                 virtual_balance: Some(DecimalAmount(view.virtual_balance)),
                 current_balance_date: view.updated_at,
@@ -335,43 +366,51 @@ impl From<AccountView> for FireflyAccountResource {
 // Currency helpers
 // ---------------------------------------------------------------------------
 
-const CURRENCY_TABLE: &[(&str, &str, &str)] = &[
-    ("JPY", "Japanese Yen", "¥"),
-    ("USD", "US Dollar", "$"),
-    ("EUR", "Euro", "€"),
-    ("GBP", "British Pound", "£"),
-    ("CHF", "Swiss Franc", "Fr"),
-    ("CAD", "Canadian Dollar", "C$"),
-    ("AUD", "Australian Dollar", "A$"),
-    ("CNY", "Chinese Yuan", "¥"),
-    ("KRW", "South Korean Won", "₩"),
-    ("INR", "Indian Rupee", "₹"),
-    ("BRL", "Brazilian Real", "R$"),
-    ("SEK", "Swedish Krona", "kr"),
-    ("NOK", "Norwegian Krone", "kr"),
-    ("DKK", "Danish Krone", "kr"),
-    ("NZD", "New Zealand Dollar", "NZ$"),
-    ("SGD", "Singapore Dollar", "S$"),
-    ("HKD", "Hong Kong Dollar", "HK$"),
-    ("TRY", "Turkish Lira", "₺"),
-    ("MXN", "Mexican Peso", "Mex$"),
-    ("ZAR", "South African Rand", "R"),
+const CURRENCY_TABLE: &[(&str, &str, &str, u32)] = &[
+    ("JPY", "Japanese Yen", "¥", 0),
+    ("USD", "US Dollar", "$", 2),
+    ("EUR", "Euro", "€", 2),
+    ("GBP", "British Pound", "£", 2),
+    ("CHF", "Swiss Franc", "Fr", 2),
+    ("CAD", "Canadian Dollar", "C$", 2),
+    ("AUD", "Australian Dollar", "A$", 2),
+    ("CNY", "Chinese Yuan", "¥", 2),
+    ("KRW", "South Korean Won", "₩", 0),
+    ("INR", "Indian Rupee", "₹", 2),
+    ("BRL", "Brazilian Real", "R$", 2),
+    ("SEK", "Swedish Krona", "kr", 2),
+    ("NOK", "Norwegian Krone", "kr", 2),
+    ("DKK", "Danish Krone", "kr", 2),
+    ("NZD", "New Zealand Dollar", "NZ$", 2),
+    ("SGD", "Singapore Dollar", "S$", 2),
+    ("HKD", "Hong Kong Dollar", "HK$", 2),
+    ("TRY", "Turkish Lira", "₺", 2),
+    ("MXN", "Mexican Peso", "Mex$", 2),
+    ("ZAR", "South African Rand", "R", 2),
 ];
 
 fn currency_symbol_from_code(code: &str) -> String {
     CURRENCY_TABLE
         .iter()
-        .find(|(c, _, _)| *c == code)
-        .map(|(_, _, s)| s.to_string())
+        .find(|(c, _, _, _)| *c == code)
+        .map(|(_, _, s, _)| s.to_string())
         .unwrap_or_else(|| code.to_string())
 }
 
 fn currency_name_from_code(code: &str) -> String {
     CURRENCY_TABLE
         .iter()
-        .find(|(c, _, _)| *c == code)
-        .map(|(_, n, _)| n.to_string())
+        .find(|(c, _, _, _)| *c == code)
+        .map(|(_, n, _, _)| n.to_string())
         .unwrap_or_else(|| code.to_string())
+}
+
+fn currency_decimal_places_from_code(code: &str) -> u32 {
+    CURRENCY_TABLE
+        .iter()
+        .find(|(c, _, _, _)| *c == code)
+        .map(|(_, _, _, d)| *d)
+        .unwrap_or(2)
 }
 
 // ---------------------------------------------------------------------------

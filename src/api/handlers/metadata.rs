@@ -9,6 +9,7 @@ use crate::app::AppState;
 use crate::core::auth::models::Principal;
 use crate::core::compatibility::envelope::{FireflyListEnvelope, FireflySingleEnvelope};
 use crate::core::compatibility::error_response::FireflyErrorResponse;
+use crate::core::compatibility::pagination::{DEFAULT_LIMIT, DEFAULT_PAGE};
 use crate::core::error_mapping::mapper::{map_domain_error, DomainError};
 use crate::modules::metadata::{
     FireflyCurrencyResource, FireflySystemInfoResource, FireflyUserResource, MetadataService,
@@ -28,8 +29,8 @@ pub async fn list_currencies_handler(
     Json<FireflyListEnvelope<FireflyCurrencyResource>>,
     (StatusCode, Json<FireflyErrorResponse>),
 > {
-    let page = parse_page_param(request.page, crate::modules::metadata::DEFAULT_PAGE)?;
-    let limit = parse_limit_param(request.limit, crate::modules::metadata::DEFAULT_LIMIT)?;
+    let page = parse_page_param(request.page, DEFAULT_PAGE)?;
+    let limit = parse_limit_param(request.limit, DEFAULT_LIMIT)?;
 
     let response = MetadataService::list_currencies(page, limit);
     Ok(Json(response))

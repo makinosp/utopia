@@ -8,9 +8,6 @@ use crate::core::compatibility::envelope::FireflyListEnvelope;
 use crate::core::compatibility::pagination::Paginated;
 use crate::core::error_mapping::mapper::DomainError;
 
-pub const DEFAULT_PAGE: u32 = 1;
-pub const DEFAULT_LIMIT: u32 = 50;
-
 // ---------------------------------------------------------------------------
 // Currency data
 // ---------------------------------------------------------------------------

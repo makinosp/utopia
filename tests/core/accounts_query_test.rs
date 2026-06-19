@@ -1,7 +1,8 @@
 use proptest::prelude::*;
 
+use utopia::core::compatibility::pagination::{DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT};
 use utopia::core::error_mapping::mapper::DomainError;
-use utopia::modules::accounts::{AccountListQuery, DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT};
+use utopia::modules::accounts::AccountListQuery;
 
 const SUPPORTED_ACCOUNT_TYPES: &[&str] = &[
     "asset",
