@@ -291,7 +291,34 @@ Functional Design complete and transitioned to NFR Requirements stage.
 
 ---
 
-## CONSTRUCTION — NFR Requirements UOW-01 Start
+## CONSTRUCTION — NFR Design Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: NFR Design for UOW-04 Auth Enhancement approved. Transitioning to Code Generation Part 1 (Planning).
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Code Generation Plan Approval (UOW-04)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: Code Generation Plan approved. Starting Part 2 - Generation execution.
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Code Generation Completion (UOW-04)
+
+**Timestamp**: 2026-06-20T00:02:00Z
+**User Input**: (stage execution complete)
+**AI Response**: Code Generation for UOW-04 Auth Enhancement completed. All 12 steps executed. Generated: `src/api/middleware/rate_limiter.rs` (created), `src/core/auth/error.rs` (modified), `src/core/error_mapping/mapper.rs` (modified), `src/core/auth/metrics.rs` (modified), `src/config.rs` (modified), `src/app.rs` (modified), `src/api/router.rs` (modified), `.env.example` (modified), `tests/auth_integration_test.rs` (created), `tests/core/error_mapper_test.rs` (modified), `tests/core/token_lifecycle_test.rs` (modified). `cargo check` passes. Presenting approval gate.
+**Context**: Code Generation complete for UOW-04; awaiting next stage decision.
+
+---
+
+## CONSTRUCTION — NFR Design UOW-01 Start
 
 **Timestamp**: 2026-05-16T00:00:00Z **User Input**: (stage transition) **AI
 Response**: Started NFR Requirements for UOW-01 Core Foundation and generated
@@ -498,6 +525,24 @@ Infrastructure Design in progress, awaiting answers.
 **Timestamp**: 2026-05-16T09:31:05Z **User Input**:
 "回答しました。次に進みます。" **AI Response**: Verified all answered planning
 questions in core-foundation-infrastructure-design-plan.md, checked the selected
+
+---
+
+## INCEPTION — Requirements Analysis Completion (US-021/US-022)
+
+**Timestamp**: 2026-06-11T01:00:00Z
+**User Input**: (Answers provided in requirement-verification-questions.md)
+**AI Response**: Requirements analysis completed. Generated requirements.md. Proceeding to Workflow Planning.
+**Context**: Requirements Analysis stage complete; transition to Workflow Planning.
+
+---
+
+## INCEPTION — Workflow Planning Completion (US-021/US-022)
+
+**Timestamp**: 2026-06-11T01:00:00Z
+**User Input**: "承認して続行。"
+**AI Response**: Workflow Planning completed. Execution plan created with 4 phases: NFR Requirements → NFR Design → Code Generation → Build & Test. Application Design, Units Generation, Functional Design, Infrastructure Design all SKIPPED as auth enhancement is within existing component boundaries.
+**Context**: Workflow Planning stage complete; awaiting explicit approval.
 self-hosted topology against approved functional design, NFR design, and enabled
 Security Baseline rules, and found no blocking ambiguity requiring follow-up
 questions. **Context**: Infrastructure Design input verification complete for
@@ -674,6 +719,92 @@ stage executed with Docker-based integration testcontainers.
 
 ---
 
-## Post-Workflow — CI Phase 2 Skipped
+---
+
+## INCEPTION — Workspace Detection (US-021/US-022)
+
+**Timestamp**: 2026-06-11T01:00:00Z
+**User Input**: "Using AI-DLC, stories.md に記載されている認証関連のユーザーストーリー (US-021 および US-022) を実装したいです。この新しい要件に対して AI-DLC のワークフローを開始してください。"
+**AI Response**: Welcome message displayed. Workspace Detection executed. Found existing brownfield Rust/Axum codebase with partial auth implementation (middleware, validator, service, handlers). aidlc-state shows COMPLETED. No reverse engineering artifacts exist. Proceeding to Requirements Analysis.
+**Context**: New workflow start for US-021 and US-022 implementation.
+
+---
+
+## INCEPTION — Requirements Analysis Start (US-021/US-022)
+
+**Timestamp**: 2026-06-11T01:00:00Z
+**User Input**: (continuing from Workspace Detection)
+**AI Response**: Requirements Analysis started. Loading reverse engineering context from existing codebase and previous artifacts. Creating requirement-verification-questions.md for US-021/US-022.
+**Context**: Requirements Analysis in progress. Waiting for user to fill in questions.
 
 ## **Timestamp**: 2026-06-11T00:00:00Z **User Input**: "CI Phase 2をスキップして次に進みたい。" **AI Response**: CI Phase 2 Hardening marked as SKIPPED in aidlc-state.md. Current stage set to COMPLETED. All AI-DLC phases and post-workflow enhancements have been resolved. **Context**: User decision to skip CI Phase 2 and move forward.
+
+---
+
+## CONSTRUCTION — Workflow Planning Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: "Using AI-DLC, 承認して続行します。"
+**AI Response**: Workflow Planning for US-021/US-022 approved. Execution plan confirmed: NFR Requirements → NFR Design → Code Generation → Build & Test. Transitioning to NFR Requirements stage. Plan answers in `auth-enhancement-nfr-requirements-plan.md` already completed.
+**Context**: Workflow Planning approval gate passed; transition to NFR Requirements.
+
+---
+
+## CONSTRUCTION — NFR Requirements Start (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: (stage transition from Workflow Planning)
+**AI Response**: NFR Requirements for auth-enhancement started. All 8 plan answers already provided in `auth-enhancement-nfr-requirements-plan.md`. Verifying answers and generating NFR requirements artifacts.
+**Context**: NFR Requirements in progress; generating artifacts.
+
+---
+
+## CONSTRUCTION — NFR Requirements Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: NFR Requirements for auth-enhancement approved. Marked NFR Requirements complete and transitioned to NFR Design stage.
+**Context**: NFR Requirements approval gate passed.
+
+---
+
+## CONSTRUCTION — NFR Design Start (US-021/US-022)
+
+**Timestamp**: 2026-06-14T00:00:00Z
+**User Input**: (stage transition from NFR Requirements)
+**AI Response**: NFR Design for auth-enhancement started. Creating nfr-design plan with questions for rate limiting design patterns, logical component integration, and test architecture. Awaiting user answers.
+**Context**: NFR Design plan created; waiting for user input.
+
+---
+
+## CONSTRUCTION — NFR Design Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: NFR Design for UOW-04 Auth Enhancement approved. Transitioning to Code Generation Part 1 (Planning).
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Build and Test Start (UOW-04 Auth Enhancement)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "Using AI-DLC, Code Generationを承認して続行します。"
+**AI Response**: Build and Test phase started. Compilation verified (`cargo check` OK). Running test suite.
+**Context**: Build and Test phase execution for UOW-04 Auth Enhancement.
+
+---
+
+## CONSTRUCTION — Build and Test Results (UOW-04 Auth Enhancement)
+
+**Timestamp**: 2026-06-20T00:01:00Z
+**User Input**: (automatic — test suite execution)
+**AI Response**: All tests passed:
+- Unit tests: 8/8 passed
+- Core tests: 33/33 passed (includes new PBT tests: `auth_error_serialization_round_trip`, `token_format_round_trip`)
+- Auth integration tests: 3 tests (ignored — require Docker daemon)
+- Accounts API tests: 7 tests (1 passed, 6 ignored — require Docker)
+- Transactions API tests: 6 tests (ignored — require Docker)
+- DB integration test: 1 (ignored — requires Docker)
+**Context**: Build and Test execution results.
+

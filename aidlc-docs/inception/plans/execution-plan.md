@@ -1,129 +1,127 @@
-# Execution Plan
+# Execution Plan — US-021 / US-022 Authentication Enhancement
 
 ## Detailed Analysis Summary
 
+### Transformation Scope
+- **Transformation Type**: Single component enhancement (existing auth module)
+- **Primary Changes**: Rate limiting on bootstrap token endpoint, integration tests, documentation
+- **Related Components**: `core/auth/`, `api/handlers/tokens.rs`, `api/router.rs`, `config.rs`
+
 ### Change Impact Assessment
-- **User-facing changes**: Yes — New API endpoints and response contracts consumed by household finance client apps.
-- **Structural changes**: Yes — Greenfield; all architecture and service layers are new.
-- **Data model changes**: Yes — New data models for accounts, transactions, budgets, currencies, and users.
-- **API changes**: Yes — Firefly-III compatible REST API surface (partial compatibility matrix).
-- **NFR impact**: Yes — Security extension (blocking) and property-based testing (partial) are both active. Financial correctness demands precise monetary arithmetic and round-trip serialization guarantees.
+- **User-facing changes**: No — internal security hardening
+- **Structural changes**: No — within existing component boundaries
+- **Data model changes**: No
+- **API changes**: No — no new endpoints or changed contracts
+- **NFR impact**: Yes — rate limiting introduced (SECURITY-11 compliance)
+
+### Component Relationships
+- **Primary Component**: `src/core/auth/` (service, middleware, validator)
+- **API Layer**: `src/api/handlers/tokens.rs`, `src/api/router.rs`
+- **Configuration**: `src/config.rs` (rate limit settings)
+- **Tests**: `tests/core/auth_validator_test.rs`, `tests/core/token_lifecycle_test.rs`, new integration tests
 
 ### Risk Assessment
-- **Risk Level**: Medium
-- **Rollback Complexity**: Easy (greenfield; no existing data to migrate)
-- **Testing Complexity**: Moderate (financial arithmetic precision, API contract compatibility, PBT on serialization round-trips)
-
----
+- **Risk Level**: Low
+- **Rollback Complexity**: Easy (isolated changes)
+- **Testing Complexity**: Moderate (integration tests for auth flows)
 
 ## Workflow Visualization
 
 ```mermaid
 flowchart TD
-    Start(["User Request"])
-
+    Start(["US-021 / US-022 Request"])
+    
     subgraph INCEPTION["🔵 INCEPTION PHASE"]
-        WD["Workspace Detection\n**COMPLETED**"]
-        RA["Requirements Analysis\n**COMPLETED**"]
-        US["User Stories\n**COMPLETED**"]
-        WP["Workflow Planning\n**COMPLETED**"]
-        AD["Application Design\n**COMPLETED**"]
-        UG["Units Generation\n**COMPLETED**"]
+        WD["Workspace Detection<br/><b>COMPLETED</b>"]
+        RA["Requirements Analysis<br/><b>COMPLETED</b>"]
+        WP["Workflow Planning<br/><b>IN PROGRESS</b>"]
+        US["User Stories<br/><b>SKIP</b>"]
+        AD["Application Design<br/><b>SKIP</b>"]
+        UG["Units Generation<br/><b>SKIP</b>"]
     end
-
+    
     subgraph CONSTRUCTION["🟢 CONSTRUCTION PHASE"]
-        FD["Functional Design\n**EXECUTE**"]
-        NFRA["NFR Requirements\n**EXECUTE**"]
-        NFRD["NFR Design\n**EXECUTE**"]
-        ID["Infrastructure Design\n**EXECUTE**"]
-        CG["Code Generation\n**EXECUTE**"]
-        BT["Build and Test\n**EXECUTE**"]
+        FD["Functional Design<br/><b>SKIP</b>"]
+        NFRA["NFR Requirements<br/><b>EXECUTE</b>"]
+        NFRD["NFR Design<br/><b>EXECUTE</b>"]
+        ID["Infrastructure Design<br/><b>SKIP</b>"]
+        CG["Code Generation<br/><b>EXECUTE</b>"]
+        BT["Build and Test<br/><b>EXECUTE</b>"]
     end
-
+    
     subgraph OPERATIONS["🟡 OPERATIONS PHASE"]
-        OPS["Operations\n**PLACEHOLDER**"]
+        OPS["Operations<br/><b>PLACEHOLDER</b>"]
     end
-
+    
     Start --> WD
     WD --> RA
-    RA --> US
-    US --> WP
-    WP --> AD
-    AD --> UG
-    UG --> FD
-    FD --> NFRA
+    RA --> WP
+    WP --> NFRA
     NFRA --> NFRD
-    NFRD --> ID
-    ID --> CG
+    NFRD --> CG
     CG --> BT
-    BT --> OPS
-    OPS --> End(["Complete"])
+    BT --> End(["Complete"])
 
     style WD fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style RA fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
-    style US fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style WP fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style AD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style UG fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style FD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
     style NFRA fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
     style NFRD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style ID fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
     style CG fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style BT fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
-    style OPS fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style US fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style AD fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style UG fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style FD fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style ID fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
     style Start fill:#CE93D8,stroke:#6A1B9A,stroke-width:3px,color:#000
     style End fill:#CE93D8,stroke:#6A1B9A,stroke-width:3px,color:#000
+    style OPS fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
 
     linkStyle default stroke:#333,stroke-width:2px
 ```
 
----
-
 ## Phases to Execute
 
 ### 🔵 INCEPTION PHASE
+- [x] Workspace Detection (COMPLETED)
+- [x] Requirements Analysis (COMPLETED)
+- [x] Execution Plan (IN PROGRESS)
+- [ ] Application Design — **SKIP**
+  - **Rationale**: Changes are within existing component boundaries; no new components needed
+- [ ] Units Generation — **SKIP**
+  - **Rationale**: Single unit of work; no complex decomposition needed
 
-- [x] Workspace Detection — COMPLETED
-- [x] Reverse Engineering — SKIPPED (Greenfield project)
-- [x] Requirements Analysis — COMPLETED
-- [x] User Stories — COMPLETED
-- [ ] Workflow Planning — IN PROGRESS (this document)
-- [ ] Application Design — **EXECUTE**
-  - **Rationale**: New Rust API service with multiple domain layers (accounts, transactions, budgets). Component boundaries, service trait definitions, and repository patterns need to be established before implementation.
-- [ ] Units Generation — **EXECUTE**
-  - **Rationale**: System has multiple domains with distinct data models and endpoint groups. Decomposing into implementation units (e.g., auth, accounts, transactions, budgets, metadata) will enable sequential, focused code generation with clear scope per unit.
-
-### 🟢 CONSTRUCTION PHASE (per-unit loop)
-
-- [x] Functional Design — COMPLETED
-- [x] NFR Requirements — COMPLETED
-- [x] NFR Design — COMPLETED
-- [x] Infrastructure Design — COMPLETED
-- [x] Code Generation — COMPLETED
-- [x] Build and Test — COMPLETED
+### 🟢 CONSTRUCTION PHASE
+- [ ] Functional Design — **SKIP**
+  - **Rationale**: No new business logic; auth flow already fully defined and implemented
+- [ ] NFR Requirements — **EXECUTE**
+  - **Rationale**: Rate limiting is a new NFR (SECURITY-11 compliance); need to assess requirements
+- [ ] NFR Design — **EXECUTE**
+  - **Rationale**: Need to design rate limiting strategy for bootstrap endpoint
+- [ ] Infrastructure Design — **SKIP**
+  - **Rationale**: No infrastructure changes; rate limiting is application-level middleware
+- [ ] Code Generation — **EXECUTE** (ALWAYS)
+  - **Rationale**: Implementation of rate limiting and integration tests
+- [ ] Build and Test — **EXECUTE** (ALWAYS)
+  - **Rationale**: Build, test, and verification needed
 
 ### 🟡 OPERATIONS PHASE
+- [ ] Operations — PLACEHOLDER
+  - **Rationale**: Future deployment and monitoring workflows
 
-- [x] Operations — SKIPPED (PLACEHOLDER; no actionable AI-DLC stage is defined in the current version)
-
-## Post-Workflow Enhancements
-- [x] CI Phase 1 Implementation — COMPLETED (GitHub Actions baseline at `.github/workflows/ci-phase1.yml`)
-- [ ] CI Phase 2 Hardening — NOT STARTED
-
----
+## Estimated Timeline
+- **Total Phases**: 4 (NFR Requirements, NFR Design, Code Generation, Build & Test)
+- **Estimated Duration**: Short iteration (auth enhancement scope)
 
 ## Success Criteria
-
-- **Primary Goal**: A Rust API service that passes compatibility checks for supported Firefly-III endpoints and satisfies security and PBT extension constraints.
+- **Primary Goal**: US-021 and US-022 acceptance criteria satisfied
 - **Key Deliverables**:
-  - Domain data models for accounts, transactions, budgets, currencies
-  - REST API handlers with Firefly-III compatible request/response schemas
-  - Bearer token authentication and per-user authorization
-  - Property-based tests for monetary calculations and payload serialization
-  - Self-hosted deployment configuration (container or binary packaging)
+  - Rate limiting on bootstrap token endpoint
+  - Integration tests covering token issuance, revocation, and 401 rejection
+  - PBT for serialization round-trips
+  - Updated OpenAPI documentation
 - **Quality Gates**:
-  - All Must-priority stories have passing acceptance criteria tests
-  - Security extension constraints satisfied (auth, input validation, OWASP Top 10)
-  - PBT enforced on monetary arithmetic and serialization round-trips
-  - API contract validated against Firefly-III schema for targeted endpoints
+  - `cargo check` passes
+  - All tests pass
+  - Security Baseline rules compliant

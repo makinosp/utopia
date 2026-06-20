@@ -17,6 +17,7 @@ pub struct PrometheusMetrics {
     pub token_revoke_total: IntCounter,
     #[allow(dead_code)]
     pub http_5xx_total: IntCounter,
+    pub rate_limited_requests_total: IntCounterVec,
 }
 
 impl PrometheusMetrics {
@@ -68,6 +69,15 @@ impl PrometheusMetrics {
         let http_5xx_total =
             IntCounter::with_opts(Opts::new("http_5xx_total", "HTTP 5xx count")).expect("counter");
 
+        let rate_limited_requests_total = IntCounterVec::new(
+            Opts::new(
+                "utopia_rate_limited_requests_total",
+                "Rate-limited request count",
+            ),
+            &["endpoint", "reason"],
+        )
+        .expect("counter vec");
+
         for collector in [
             Box::new(auth_validation_latency_ms.clone()) as Box<dyn prometheus::core::Collector>,
             Box::new(authenticated_requests_total.clone()),
@@ -78,6 +88,7 @@ impl PrometheusMetrics {
             Box::new(token_issue_total.clone()),
             Box::new(token_revoke_total.clone()),
             Box::new(http_5xx_total.clone()),
+            Box::new(rate_limited_requests_total.clone()),
         ] {
             registry.register(collector).expect("register collector");
         }
@@ -93,6 +104,7 @@ impl PrometheusMetrics {
             token_issue_total,
             token_revoke_total,
             http_5xx_total,
+            rate_limited_requests_total,
         }
     }
 

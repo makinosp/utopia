@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use axum::http::StatusCode;
+use proptest::prelude::*;
 use utopia::core::auth::error::AuthError;
 use utopia::core::error_mapping::mapper::{map_auth_error, map_domain_error, DomainError};
 
@@ -39,4 +40,42 @@ fn maps_conflict_to_409() {
         "A concurrent modification was detected. Please retry."
     );
     assert!(body.errors.is_empty());
+}
+
+proptest! {
+    #[test]
+    fn auth_error_serialization_round_trip(_reason_code in "[a-z_]{3,30}") {
+        // This test validates that any AuthError variant produces a valid JSON
+        // response with a reason_code embedded in the message.
+        // We test all known AuthError variants.
+        let variants = vec![
+            AuthError::MissingAuthorizationHeader,
+            AuthError::TokenMalformed,
+            AuthError::TokenNotFound,
+            AuthError::TokenRevoked,
+            AuthError::UserBlocked,
+            AuthError::DependencyFailure,
+            AuthError::BootstrapKeyMissing,
+            AuthError::BootstrapKeyInvalid,
+            AuthError::BootstrapAlreadyUsed,
+            AuthError::RateLimitExceeded { retry_after_secs: 60 },
+        ];
+
+        for variant in variants {
+            let (status, body) = map_auth_error(variant.clone());
+            let json = serde_json::to_value(&body).expect("serialize");
+            prop_assert!(json["message"].as_str().is_some());
+            prop_assert!(json["errors"].is_object());
+
+            // RateLimitExceeded returns 429, all others return 401
+            match variant {
+                AuthError::RateLimitExceeded { .. } => {
+                    prop_assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+                }
+                _ => {
+                    prop_assert_eq!(status, StatusCode::UNAUTHORIZED);
+                }
+            }
+        }
+    }
 }

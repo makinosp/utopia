@@ -1,5 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+/// Default page number for pagination.
+pub const DEFAULT_PAGE: u32 = 1;
+
+/// Default limit for pagination.
+pub const DEFAULT_LIMIT: u32 = 50;
+
+/// Maximum limit for pagination.
+pub const MAX_LIMIT: u32 = 100;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PaginationMeta {
     pub total: u64,

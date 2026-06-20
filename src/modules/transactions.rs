@@ -9,17 +9,13 @@ use uuid::Uuid;
 
 use crate::core::auth::models::Principal;
 use crate::core::compatibility::decimal_amount::DecimalAmount;
-use crate::core::compatibility::pagination::Paginated;
+use crate::core::compatibility::pagination::{Paginated, DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT};
 use crate::core::error_mapping::mapper::DomainError;
 use crate::core::persistence::repository::{
     AccountBalanceUpdate, AccountReadRepository, PgAccountRepository, PgTransactionRepository,
     RepoError, TransactionFilter, TransactionReadRepository, TransactionRecord,
     TransactionWriteRepository,
 };
-
-pub const DEFAULT_PAGE: u32 = 1;
-pub const DEFAULT_LIMIT: u32 = 50;
-pub const MAX_LIMIT: u32 = 100;
 
 const ALLOWED_TRANSACTION_TYPES: &[&str] = &["withdrawal", "deposit", "transfer"];
 
@@ -384,19 +380,52 @@ fn balance_impacts(
 }
 
 /// Reverse the balance impact (used for delete/update).
+/// Directly computes the inverse without calling balance_impacts.
 fn reverse_balance_impacts(
     transaction_type: &str,
     amount: Decimal,
     source_id: Option<Uuid>,
     destination_id: Option<Uuid>,
 ) -> Vec<AccountBalanceUpdate> {
-    balance_impacts(transaction_type, amount, source_id, destination_id)
-        .into_iter()
-        .map(|u| AccountBalanceUpdate {
-            account_id: u.account_id,
-            delta: -u.delta,
-        })
-        .collect()
+    match transaction_type {
+        "withdrawal" => {
+            let mut updates = Vec::new();
+            if let Some(src) = source_id {
+                updates.push(AccountBalanceUpdate {
+                    account_id: src,
+                    delta: amount, // Reverse: was -amount, now +amount
+                });
+            }
+            updates
+        }
+        "deposit" => {
+            let mut updates = Vec::new();
+            if let Some(dst) = destination_id {
+                updates.push(AccountBalanceUpdate {
+                    account_id: dst,
+                    delta: -amount, // Reverse: was +amount, now -amount
+                });
+            }
+            updates
+        }
+        "transfer" => {
+            let mut updates = Vec::new();
+            if let Some(src) = source_id {
+                updates.push(AccountBalanceUpdate {
+                    account_id: src,
+                    delta: amount, // Reverse: was -amount, now +amount
+                });
+            }
+            if let Some(dst) = destination_id {
+                updates.push(AccountBalanceUpdate {
+                    account_id: dst,
+                    delta: -amount, // Reverse: was +amount, now -amount
+                });
+            }
+            updates
+        }
+        _ => vec![],
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -11,7 +11,7 @@ use crate::core::auth::audit_logger::AuditLogger;
 use crate::core::auth::models::Principal;
 use crate::core::compatibility::envelope::{FireflyListEnvelope, FireflySingleEnvelope};
 use crate::core::compatibility::error_response::FireflyErrorResponse;
-use crate::core::compatibility::pagination::Paginated;
+use crate::core::compatibility::pagination::{Paginated, DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT};
 use crate::core::error_mapping::mapper::{map_domain_error, DomainError};
 use crate::modules::transactions::{
     CreateTransactionRequest, FireflyTransactionResource, TransactionListQuery, TransactionService,
@@ -122,6 +122,7 @@ pub async fn create_transaction_handler(
         Some(principal.user_id),
         None,
         None,
+        None,
     ));
 
     Ok((
@@ -161,6 +162,7 @@ pub async fn update_transaction_handler(
         Some(principal.user_id),
         None,
         None,
+        None,
     ));
 
     Ok(Json(FireflySingleEnvelope {
@@ -186,6 +188,7 @@ pub async fn delete_transaction_handler(
         "transaction_deleted",
         "success",
         Some(principal.user_id),
+        None,
         None,
         None,
     ));
@@ -237,7 +240,7 @@ pub async fn list_account_transactions_handler(
 fn parse_page_param(raw: Option<String>) -> Result<u32, (StatusCode, Json<FireflyErrorResponse>)> {
     let raw = raw.as_deref();
     if raw.is_none() || raw.map(|s| s.trim().is_empty()).unwrap_or(true) {
-        return Ok(crate::modules::transactions::DEFAULT_PAGE);
+        return Ok(DEFAULT_PAGE);
     }
     let val = raw.unwrap().parse::<u32>().map_err(|_| {
         let mut fields = std::collections::HashMap::new();
@@ -263,7 +266,7 @@ fn parse_page_param(raw: Option<String>) -> Result<u32, (StatusCode, Json<Firefl
 fn parse_limit_param(raw: Option<String>) -> Result<u32, (StatusCode, Json<FireflyErrorResponse>)> {
     let raw = raw.as_deref();
     if raw.is_none() || raw.map(|s| s.trim().is_empty()).unwrap_or(true) {
-        return Ok(crate::modules::transactions::DEFAULT_LIMIT);
+        return Ok(DEFAULT_LIMIT);
     }
     let val = raw.unwrap().parse::<u32>().map_err(|_| {
         let mut fields = std::collections::HashMap::new();
@@ -283,7 +286,7 @@ fn parse_limit_param(raw: Option<String>) -> Result<u32, (StatusCode, Json<Firef
         let (status, response) = crate::core::error_mapping::mapper::map_validation_error(fields);
         return Err((status, Json(response)));
     }
-    if val > crate::modules::transactions::MAX_LIMIT {
+    if val > MAX_LIMIT {
         let mut fields = std::collections::HashMap::new();
         fields.insert(
             "limit".to_string(),

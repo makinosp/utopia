@@ -11,6 +11,7 @@ pub enum AuthError {
     BootstrapKeyMissing,
     BootstrapKeyInvalid,
     BootstrapAlreadyUsed,
+    RateLimitExceeded { retry_after_secs: u64 },
 }
 
 impl AuthError {
@@ -25,6 +26,7 @@ impl AuthError {
             Self::BootstrapKeyMissing => "bootstrap_key_missing",
             Self::BootstrapKeyInvalid => "bootstrap_key_invalid",
             Self::BootstrapAlreadyUsed => "bootstrap_key_already_used",
+            Self::RateLimitExceeded { .. } => "rate_limit_exceeded",
         }
     }
 
@@ -39,6 +41,7 @@ impl AuthError {
             Self::BootstrapKeyMissing => "Bootstrap key is required.",
             Self::BootstrapKeyInvalid => "Bootstrap key is invalid.",
             Self::BootstrapAlreadyUsed => "Bootstrap key has already been used.",
+            Self::RateLimitExceeded { .. } => "Too many requests. Please retry later.",
         }
     }
 }

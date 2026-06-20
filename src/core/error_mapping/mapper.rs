@@ -39,10 +39,24 @@ pub fn map_domain_error(err: DomainError) -> (StatusCode, FireflyErrorResponse) 
 }
 
 pub fn map_auth_error(err: AuthError) -> (StatusCode, FireflyErrorResponse) {
-    let reason = err.reason_code();
-    let description = err.description();
-    let message = format!("{reason}: {description}");
-    (StatusCode::UNAUTHORIZED, FireflyErrorResponse::new(message))
+    match err {
+        AuthError::RateLimitExceeded { retry_after_secs } => (
+            StatusCode::TOO_MANY_REQUESTS,
+            FireflyErrorResponse {
+                message: format!(
+                    "Too many requests. Please retry after {} seconds.",
+                    retry_after_secs
+                ),
+                errors: HashMap::new(),
+            },
+        ),
+        _ => {
+            let reason = err.reason_code();
+            let description = err.description();
+            let message = format!("{reason}: {description}");
+            (StatusCode::UNAUTHORIZED, FireflyErrorResponse::new(message))
+        }
+    }
 }
 
 pub fn map_validation_error(
