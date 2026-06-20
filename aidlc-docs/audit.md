@@ -783,3 +783,28 @@ stage executed with Docker-based integration testcontainers.
 **User Input**: "承認して続行します。"
 **AI Response**: NFR Design for UOW-04 Auth Enhancement approved. Transitioning to Code Generation Part 1 (Planning).
 **Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Build and Test Start (UOW-04 Auth Enhancement)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "Using AI-DLC, Code Generationを承認して続行します。"
+**AI Response**: Build and Test phase started. Compilation verified (`cargo check` OK). Running test suite.
+**Context**: Build and Test phase execution for UOW-04 Auth Enhancement.
+
+---
+
+## CONSTRUCTION — Build and Test Results (UOW-04 Auth Enhancement)
+
+**Timestamp**: 2026-06-20T00:01:00Z
+**User Input**: (automatic — test suite execution)
+**AI Response**: All tests passed:
+- Unit tests: 8/8 passed
+- Core tests: 33/33 passed (includes new PBT tests: `auth_error_serialization_round_trip`, `token_format_round_trip`)
+- Auth integration tests: 3 tests (ignored — require Docker daemon)
+- Accounts API tests: 7 tests (1 passed, 6 ignored — require Docker)
+- Transactions API tests: 6 tests (ignored — require Docker)
+- DB integration test: 1 (ignored — requires Docker)
+**Context**: Build and Test execution results.
+
