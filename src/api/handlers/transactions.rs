@@ -122,6 +122,7 @@ pub async fn create_transaction_handler(
         Some(principal.user_id),
         None,
         None,
+        None,
     ));
 
     Ok((
@@ -161,6 +162,7 @@ pub async fn update_transaction_handler(
         Some(principal.user_id),
         None,
         None,
+        None,
     ));
 
     Ok(Json(FireflySingleEnvelope {
@@ -186,6 +188,7 @@ pub async fn delete_transaction_handler(
         "transaction_deleted",
         "success",
         Some(principal.user_id),
+        None,
         None,
         None,
     ));

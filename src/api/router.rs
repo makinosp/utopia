@@ -22,6 +22,7 @@ use crate::api::handlers::transactions::{
     list_account_transactions_handler, list_transactions_handler, update_transaction_handler,
 };
 use crate::api::middleware::accept_header_middleware;
+use crate::api::middleware::rate_limiter::rate_limit_middleware;
 use crate::app::AppState;
 use crate::core::auth::metrics::metrics_handler;
 use crate::core::auth::middleware::auth_middleware;
@@ -55,12 +56,24 @@ pub fn build_router(state: Arc<AppState>) -> Router {
             auth_middleware,
         ));
 
-    Router::new()
-        .merge(protected)
+    let rate_limited = Router::new()
         .route(
             "/api/v1/bootstrap/tokens",
             post(bootstrap_issue_token_handler),
         )
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            rate_limit_middleware
+                as fn(
+                    axum::extract::State<std::sync::Arc<crate::app::AppState>>,
+                    axum::http::Request<axum::body::Body>,
+                    axum::middleware::Next,
+                ) -> _,
+        ));
+
+    Router::new()
+        .merge(protected)
+        .merge(rate_limited)
         .route("/metrics", axum::routing::get(metrics_handler))
         .with_state(state)
         .layer(middleware::from_fn(accept_header_middleware))

@@ -291,7 +291,34 @@ Functional Design complete and transitioned to NFR Requirements stage.
 
 ---
 
-## CONSTRUCTION — NFR Requirements UOW-01 Start
+## CONSTRUCTION — NFR Design Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: NFR Design for UOW-04 Auth Enhancement approved. Transitioning to Code Generation Part 1 (Planning).
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Code Generation Plan Approval (UOW-04)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: Code Generation Plan approved. Starting Part 2 - Generation execution.
+**Context**: Stage approval gate passed.
+
+---
+
+## CONSTRUCTION — Code Generation Completion (UOW-04)
+
+**Timestamp**: 2026-06-20T00:02:00Z
+**User Input**: (stage execution complete)
+**AI Response**: Code Generation for UOW-04 Auth Enhancement completed. All 12 steps executed. Generated: `src/api/middleware/rate_limiter.rs` (created), `src/core/auth/error.rs` (modified), `src/core/error_mapping/mapper.rs` (modified), `src/core/auth/metrics.rs` (modified), `src/config.rs` (modified), `src/app.rs` (modified), `src/api/router.rs` (modified), `.env.example` (modified), `tests/auth_integration_test.rs` (created), `tests/core/error_mapper_test.rs` (modified), `tests/core/token_lifecycle_test.rs` (modified). `cargo check` passes. Presenting approval gate.
+**Context**: Code Generation complete for UOW-04; awaiting next stage decision.
+
+---
+
+## CONSTRUCTION — NFR Design UOW-01 Start
 
 **Timestamp**: 2026-05-16T00:00:00Z **User Input**: (stage transition) **AI
 Response**: Started NFR Requirements for UOW-01 Core Foundation and generated
@@ -747,3 +774,12 @@ stage executed with Docker-based integration testcontainers.
 **User Input**: (stage transition from NFR Requirements)
 **AI Response**: NFR Design for auth-enhancement started. Creating nfr-design plan with questions for rate limiting design patterns, logical component integration, and test architecture. Awaiting user answers.
 **Context**: NFR Design plan created; waiting for user input.
+
+---
+
+## CONSTRUCTION — NFR Design Approval (US-021/US-022)
+
+**Timestamp**: 2026-06-20T00:00:00Z
+**User Input**: "承認して続行します。"
+**AI Response**: NFR Design for UOW-04 Auth Enhancement approved. Transitioning to Code Generation Part 1 (Planning).
+**Context**: Stage approval gate passed.

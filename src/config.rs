@@ -16,6 +16,8 @@ pub struct AppConfig {
     pub bootstrap_key: String,
     pub bootstrap_user_email: String,
     pub strict_ssl: bool,
+    pub bootstrap_rate_limit_requests: u64,
+    pub bootstrap_rate_limit_window_secs: u64,
 }
 
 impl AppConfig {
@@ -38,6 +40,11 @@ impl AppConfig {
             bootstrap_key: required("BOOTSTRAP_KEY")?,
             bootstrap_user_email: required("BOOTSTRAP_USER_EMAIL")?,
             strict_ssl,
+            bootstrap_rate_limit_requests: parse_optional("APP_RATE_LIMIT_BOOTSTRAP_REQUESTS", 5)?,
+            bootstrap_rate_limit_window_secs: parse_optional(
+                "APP_RATE_LIMIT_BOOTSTRAP_WINDOW_SECS",
+                60,
+            )?,
         };
 
         config.validate()?;
@@ -94,4 +101,17 @@ where
     let raw = required(name)?;
     raw.parse::<T>()
         .map_err(|err| anyhow::anyhow!("failed to parse {name}: {err}"))
+}
+
+fn parse_optional<T>(name: &str, default: T) -> anyhow::Result<T>
+where
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Display,
+{
+    match env::var(name) {
+        Ok(raw) => raw
+            .parse::<T>()
+            .map_err(|err| anyhow::anyhow!("failed to parse {name}: {err}")),
+        Err(_) => Ok(default),
+    }
 }

@@ -37,6 +37,7 @@ pub async fn auth_middleware(
                 "success",
                 Some(principal.user_id),
                 None,
+                None,
                 request
                     .headers()
                     .get("x-request-id")
@@ -57,6 +58,7 @@ pub async fn auth_middleware(
             let event = AuditLogger::new_event(
                 "auth_validation",
                 "failure",
+                None,
                 None,
                 Some(err.reason_code()),
                 request

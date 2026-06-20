@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 
+use crate::api::middleware::rate_limiter::RateLimitState;
 use crate::api::router::build_router;
 use crate::config::AppConfig;
 use crate::core::auth::audit_logger::AuditLogger;
@@ -22,6 +23,7 @@ pub struct AppState {
     pub audit_logger: AuditLogger,
     pub token_service: TokenService,
     pub account_service: Arc<dyn AccountService>,
+    pub rate_limit_state: Arc<RateLimitState>,
 }
 
 pub async fn build_app(config: AppConfig) -> anyhow::Result<axum::Router> {
@@ -46,6 +48,12 @@ pub async fn build_app(config: AppConfig) -> anyhow::Result<axum::Router> {
 
     let account_service = Arc::new(AccountServiceImpl::new(repositories.account.clone()));
 
+    let rate_limit_state = Arc::new(RateLimitState::new(
+        config.bootstrap_rate_limit_requests,
+        config.bootstrap_rate_limit_window_secs,
+    ));
+    Arc::clone(&rate_limit_state).run_eviction_task();
+
     let state = Arc::new(AppState {
         config,
         repositories,
@@ -54,6 +62,7 @@ pub async fn build_app(config: AppConfig) -> anyhow::Result<axum::Router> {
         audit_logger,
         token_service,
         account_service,
+        rate_limit_state,
     });
 
     Ok(build_router(state))

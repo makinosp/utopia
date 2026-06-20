@@ -8,6 +8,7 @@ use sqlx::postgres::PgPoolOptions;
 use testcontainers::{runners::AsyncRunner, ContainerAsync, ImageExt};
 use testcontainers_modules::postgres::Postgres;
 use tower::ServiceExt;
+use utopia::api::middleware::rate_limiter::RateLimitState;
 use utopia::api::router::build_router;
 use utopia::app::AppState;
 use utopia::config::AppConfig;
@@ -33,6 +34,8 @@ fn test_config(database_url: String) -> AppConfig {
         bootstrap_key: "bootstrap-test-key-1234".to_string(),
         bootstrap_user_email: "bootstrap@example.com".to_string(),
         strict_ssl: false,
+        bootstrap_rate_limit_requests: 5,
+        bootstrap_rate_limit_window_secs: 60,
     }
 }
 
@@ -50,6 +53,9 @@ fn build_test_state(pool: sqlx::PgPool, config: AppConfig) -> Arc<AppState> {
 
     let account_service = Arc::new(AccountServiceImpl::new(repositories.account.clone()));
 
+    let rate_limit_state = Arc::new(RateLimitState::new(5, 60));
+    Arc::clone(&rate_limit_state).run_eviction_task();
+
     Arc::new(AppState {
         config,
         repositories,
@@ -58,6 +64,7 @@ fn build_test_state(pool: sqlx::PgPool, config: AppConfig) -> Arc<AppState> {
         audit_logger: AuditLogger,
         token_service,
         account_service,
+        rate_limit_state,
     })
 }
 

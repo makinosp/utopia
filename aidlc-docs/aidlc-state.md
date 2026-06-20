@@ -4,7 +4,7 @@
 
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-14T00:00:00Z
-- **Current Stage**: CONSTRUCTION - NFR Design (US-021/US-022)
+- **Current Stage**: CONSTRUCTION - Code Generation Complete (UOW-04 Auth Enhancement)
 
 ## Workspace State
 
@@ -66,9 +66,9 @@
 
 - [ ] Functional Design — SKIPPED (within existing component boundaries)
 - [ ] NFR Requirements — COMPLETED
-- [ ] NFR Design — IN PROGRESS
+- [x] NFR Design — COMPLETED
 - [ ] Infrastructure Design — SKIPPED (within existing topology)
-- [ ] Code Generation — PENDING
+- [x] Code Generation — COMPLETED
 - [ ] Build and Test — PENDING
 
 ### 🟡 OPERATIONS PHASE
