@@ -6,20 +6,20 @@
 - Execution plan: NFR Requirements is the first stage in the construction loop
 
 ## Part 1 - Planning Checklist
-- [ ] Analyze NFR sources from requirements document
-- [ ] Generate context-appropriate questions for NFR refinement
-- [ ] Collect and analyze answers
-- [ ] Generate nfr-requirements.md and tech-stack-decisions.md
-- [ ] Move stage to awaiting approval
+- [x] Analyze NFR sources from requirements document
+- [x] Generate context-appropriate questions for NFR refinement
+- [x] Collect and analyze answers
+- [x] Generate nfr-requirements.md and tech-stack-decisions.md
+- [x] Move stage to awaiting approval
 
 ## Part 2 - Generation Execution Checklist
-- [ ] Read approved plan and identify first uncompleted generation step
-- [ ] Generate nfr-requirements.md
-- [ ] Mark step complete
-- [ ] Generate tech-stack-decisions.md
-- [ ] Mark step complete
-- [ ] Validate NFR requirements artifacts
-- [ ] Mark NFR Requirements stage complete
+- [x] Read approved plan and identify first uncompleted generation step
+- [x] Generate nfr-requirements.md
+- [x] Mark step complete
+- [x] Generate tech-stack-decisions.md
+- [x] Mark step complete
+- [x] Validate NFR requirements artifacts
+- [ ] Mark NFR Requirements stage complete (awaiting user approval)
 
 ---
 
@@ -36,7 +36,7 @@ B) < 1 minute (target faster execution with parallel k6 scenarios)
 C) < 3 minutes (allow headroom for CI overhead and slower environments)
 D) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: A
 
 ### Question 2: k6 Execution Mode
 
@@ -47,7 +47,7 @@ B) **Per-VU iteration** — each VU runs the full scenario loop independently (g
 C) **Constant arrival rate** — fixed number of iterations per second (useful for soak/load testing)
 D) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: A
 
 ### Question 3: Concurrency and Virtual Users
 
@@ -58,7 +58,7 @@ B) **2-3 VUs** — limited concurrency to reduce wall-clock time
 C) **5+ VUs** — maximize speed, but may increase flakiness due to shared DB state
 D) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: A
 
 ### Question 4: Database Reset Strategy (NFR-003)
 
@@ -69,7 +69,7 @@ B) **Truncate all tables** and re-insert seed data (faster, avoids DDL operation
 C) **Use Docker Compose `docker compose down -v && docker compose up -d`** to reset the entire stack
 D) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: B
 
 ### Question 5: Observability Detail Level (NFR-004)
 
@@ -80,7 +80,7 @@ B) **Per-test detail** — pass/fail per individual test case, with timing break
 C) **Full output** — includes request/response diffs on failure for strict mode comparison
 D) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: C
 
 ### Question 6: CI Run Frequency (FR-007)
 
@@ -91,7 +91,7 @@ B) **On every pull request** — smoke tests only; full suite on push to main
 C) **On pull request labeled `compatibility-check`** — opt-in trigger
 D) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: A
 
 ### Question 7: k6 Output Artifacts
 
@@ -103,7 +103,7 @@ C) **Both JSON and HTML** reports
 D) **No artifacts** — just console output
 E) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: C
 
 ### Question 8: Seed Data Versioning
 
@@ -114,7 +114,7 @@ B) **Versioned seed files** (`seed-v1.sql`, `seed-v2.sql`) — keep a history
 C) **Generate seed data programmatically** from a script (avoids drift)
 D) Other (please specify after [Answer]:)
 
-[Answer]: 
+[Answer]: C — Generate seed data programmatically using TypeScript with Bun runtime. Unify the language with k6 test scripts to share type definitions. Place under `scripts/seed/` and execute via `bun run scripts/seed/index.ts`.
 
 ---
 
