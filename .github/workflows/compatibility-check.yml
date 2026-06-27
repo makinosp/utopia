@@ -19,6 +19,15 @@ jobs:
         run: |
           docker compose --version
 
+      - name: Create .env for CI
+        run: |
+          cp .env.example .env
+          # Override DATABASE_URL for Docker Compose network
+          sed -i 's|sslmode=require|sslmode=disable|' .env
+          sed -i 's|@localhost:|@postgres:|' .env
+          # Allow non-TLS connections in CI test environment
+          sed -i 's|APP_STRICT_SSL=true|APP_STRICT_SSL=false|' .env
+
       - name: Start application stack
         run: |
           docker compose up -d utopia-api postgres caddy
@@ -29,8 +38,8 @@ jobs:
         run: |
           echo "Waiting for application to become healthy..."
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:80/api/v1/about > /dev/null 2>&1; then
-              echo "Application is healthy"
+            if curl -sf http://localhost:3000/metrics > /dev/null 2>&1; then
+              echo "Application is healthy (metrics endpoint responding)"
               exit 0
             fi
             echo "Attempt $i/30: not ready yet..."
@@ -57,35 +66,27 @@ jobs:
 
       - name: Run k6 auth tests
         run: |
-          docker compose run --rm k6 run \
+          docker compose --profile testing run --rm k6 run \
             --env APP_BASE_URL=http://utopia-api:3000 \
             --env BOOTSTRAP_KEY="${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}" \
             --out json=/scripts/k6-results/auth-results.json \
             /scripts/k6/auth.ts
-        continue-on-error: false
 
       - name: Run k6 accounts tests
         run: |
-          docker compose run --rm k6 run \
+          docker compose --profile testing run --rm k6 run \
             --env APP_BASE_URL=http://utopia-api:3000 \
             --env BOOTSTRAP_KEY="${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}" \
             --out json=/scripts/k6-results/accounts-results.json \
             /scripts/k6/accounts.ts
-        continue-on-error: false
 
       - name: Run k6 transactions tests
         run: |
-          docker compose run --rm k6 run \
+          docker compose --profile testing run --rm k6 run \
             --env APP_BASE_URL=http://utopia-api:3000 \
             --env BOOTSTRAP_KEY="${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}" \
             --out json=/scripts/k6-results/transactions-results.json \
             /scripts/k6/transactions.ts
-        continue-on-error: false
-
-      - name: Copy results from container
-        if: always()
-        run: |
-          docker compose cp utopia-k6:/scripts/k6-results/. ./k6-results/ 2>/dev/null || true
 
       - name: Upload k6 results
         if: always()
@@ -97,4 +98,4 @@ jobs:
 
       - name: Tear down stack
         if: always()
-        run: docker compose down -v
+        run: docker compose --profile testing down -v

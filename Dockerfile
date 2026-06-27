@@ -14,6 +14,7 @@ FROM alpine:3.21
 WORKDIR /app
 
 RUN adduser -D utopia
+RUN apk add --no-cache curl
 
 COPY --from=builder /app/target/release/utopia /app/utopia
 COPY migrations /app/migrations
