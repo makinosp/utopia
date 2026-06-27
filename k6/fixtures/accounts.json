@@ -1,0 +1,351 @@
+{
+  "listEnvelope": {
+    "type": "object",
+    "required": [
+      "data",
+      "meta"
+    ],
+    "properties": {
+      "data": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/accountResource"
+        }
+      },
+      "meta": {
+        "type": "object",
+        "required": [
+          "pagination"
+        ],
+        "properties": {
+          "pagination": {
+            "type": "object",
+            "required": [
+              "total",
+              "count",
+              "per_page",
+              "current_page",
+              "total_pages"
+            ],
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "per_page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "current_page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "total_pages": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "definitions": {
+      "accountResource": {
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "attributes",
+          "links"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attributes": {
+            "$ref": "#/definitions/accountAttributes"
+          },
+          "links": {
+            "type": "array"
+          }
+        }
+      },
+      "accountAttributes": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "updated_at",
+          "name",
+          "type",
+          "currency_code",
+          "current_balance",
+          "active",
+          "currency_decimal_places",
+          "primary_currency_code",
+          "primary_currency_name",
+          "primary_currency_symbol",
+          "primary_currency_decimal_places",
+          "current_balance_date",
+          "include_net_worth"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "currency_code": {
+            "type": "string"
+          },
+          "current_balance": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "order": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "currency_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency_symbol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency_decimal_places": {
+            "type": "integer"
+          },
+          "primary_currency_code": {
+            "type": "string"
+          },
+          "primary_currency_name": {
+            "type": "string"
+          },
+          "primary_currency_symbol": {
+            "type": "string"
+          },
+          "primary_currency_decimal_places": {
+            "type": "integer"
+          },
+          "initial_balance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "virtual_balance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "current_balance_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "iban": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "account_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opening_balance": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opening_balance_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "include_net_worth": {
+            "type": "boolean"
+          },
+          "account_role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "liability_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "liability_direction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interest_period": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credit_card_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "monthly_payment_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "singleEnvelope": {
+    "type": "object",
+    "required": [
+      "data"
+    ],
+    "properties": {
+      "data": {
+        "$ref": "#/definitions/accountResource"
+      }
+    },
+    "definitions": {
+      "accountResource": {
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "attributes",
+          "links"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attributes": {
+            "type": "object",
+            "required": [
+              "created_at",
+              "updated_at",
+              "name",
+              "type",
+              "currency_code",
+              "current_balance",
+              "active",
+              "currency_decimal_places",
+              "primary_currency_code",
+              "primary_currency_name",
+              "primary_currency_symbol",
+              "primary_currency_decimal_places",
+              "current_balance_date",
+              "include_net_worth"
+            ]
+          },
+          "links": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  },
+  "createRequest": {
+    "type": "object",
+    "required": [
+      "name",
+      "type"
+    ],
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "type": {
+        "type": "string"
+      },
+      "currency_code": {
+        "type": "string"
+      },
+      "active": {
+        "type": "boolean"
+      },
+      "include_net_worth": {
+        "type": "boolean"
+      }
+    }
+  },
+  "updateRequest": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "type": {
+        "type": "string"
+      },
+      "active": {
+        "type": "boolean"
+      },
+      "include_net_worth": {
+        "type": "boolean"
+      }
+    }
+  }
+}

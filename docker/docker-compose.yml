@@ -110,6 +110,27 @@ services:
     networks:
       - internal
 
+  k6:
+    image: grafana/k6:latest
+    container_name: utopia-k6
+    profiles: ["testing"]
+    environment:
+      APP_BASE_URL: http://utopia-api:3000
+      BOOTSTRAP_KEY: ${BOOTSTRAP_KEY:-replace-me-with-long-random-bootstrap-secret}
+      DATABASE_URL: postgres://utopia:utopia@postgres:5432/utopia?sslmode=disable
+    volumes:
+      - ../k6:/scripts/k6:ro
+      - ../scripts/seed:/scripts/seed:ro
+      - k6_results:/scripts/k6-results
+    depends_on:
+      utopia-api:
+        condition: service_started
+      postgres:
+        condition: service_started
+    networks:
+      - internal
+    working_dir: /scripts/k6
+
 volumes:
   postgres_data:
   caddy_data:
@@ -117,6 +138,7 @@ volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  k6_results:
 
 networks:
   edge:
