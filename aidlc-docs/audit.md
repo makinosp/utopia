@@ -910,3 +910,21 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 **Context**: Code Generation Part 2 execution complete for UOW-05 Compatibility Verification Suite.
 
 ---
+
+## CONSTRUCTION — Build and Test (UOW-05 Compatibility Verification Suite)
+
+**Timestamp**: 2026-06-27T00:00:00Z
+**User Input**: "Using AI-DLC, 承認してBuild & Testに進みます。"
+**AI Response**: Build and Test stage executed for UOW-05. Updated all build-and-test instruction files to incorporate k6 compatibility verification suite. Updated build-and-test-summary.md with UOW-05 results. Marked Build and Test as complete in aidlc-state.md.
+**Context**: Build and Test stage for UOW-05 Compatibility Verification Suite. All units (UOW-01 through UOW-05) now complete through Build and Test.
+
+### Actions Taken
+- Updated build-instructions.md: Added k6/Bun prerequisites, seed generator build step, k6 installation verification
+- Updated unit-test-instructions.md: Added firefly_error_contract_test, UOW-05 compatibility contract test table
+- Updated integration-test-instructions.md: Added Scenario 3 (Accounts API) and Scenario 4 (Transactions API) for Firefly-III compatibility
+- Updated performance-test-instructions.md: Integrated UOW-05 k6 suite as primary performance validation method, added compatibility check functions
+- Updated security-test-instructions.md: Added k6 auth security validation (Step 7) and input validation checks (Step 8)
+- Updated build-and-test-summary.md: Added UOW-05 k6 suite section (21 scenarios), updated CI status with compatibility-check.yml
+- Updated aidlc-state.md: Marked UOW-05 Build and Test as COMPLETED
+
+---

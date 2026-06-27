@@ -68,10 +68,41 @@ Validate compose and Dockerfile:
 - No secrets hardcoded in compose file
 - Runtime user is non-root in final image
 
+### 7. k6 Auth Security Validation (UOW-05)
+```bash
+k6 run -e BASE_URL=http://localhost:3000 k6/auth.ts
+```
+
+Validates:
+- Unauthenticated requests are rejected with 401
+- Invalid bootstrap key is rejected
+- Revoked tokens are rejected with `token_revoked` reason code
+- Token values are not leaked in error responses
+
+### 8. Input Validation Checks
+```bash
+# Test malformed JSON handling
+curl -s -X POST http://localhost:3000/api/v1/accounts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN_A}" \
+  -d 'invalid-json'
+
+# Test oversized payload handling
+curl -s -X POST http://localhost:3000/api/v1/transactions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN_A}" \
+  -d '{"type":"'$(python3 -c "print('A'*10000)")'"}'
+```
+
+Expected:
+- Malformed JSON returns 400 with error envelope
+- Oversized payload returns 413 or 400
+
 ## Pass Criteria
 - All required checks pass
 - No critical or high-risk security findings remain unresolved
 - Security baseline controls are verifiably active
+- k6 auth security scenarios all pass
 
 ## Remediation Flow
 If any check fails:

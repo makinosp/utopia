@@ -4,6 +4,8 @@
 - Build tool: Rust toolchain 1.86.x and Cargo
 - Container tools: Docker Engine 25+ and Docker Compose v2
 - Optional observability stack: Prometheus and Grafana containers from compose profile
+- k6 testing: k6 CLI (v0.50+) or Docker k6 image (grafana/k6:latest)
+- Seed runtime: Bun runtime (v1.0+) for seed data generator
 - System requirements: Linux host, 4+ CPU cores, 8+ GB RAM, 20+ GB free disk
 
 ## Required Environment Variables
@@ -19,6 +21,8 @@ Create a runtime environment file before build and run:
 - TOKEN_CACHE_MAX_CAPACITY
 - BOOTSTRAP_KEY
 - BOOTSTRAP_USER_EMAIL
+- APP_BASE_URL (for k6 tests, e.g. http://localhost:3000)
+- K6_OUTPUT_DIR (optional, defaults to k6-results/)
 
 Reference template: .env.example
 
@@ -61,6 +65,22 @@ Build artifacts:
 - target/debug/utopia
 - target/release/utopia
 - Docker image utopia-api:0.1.0
+
+### 6. Build Seed Data Generator (UOW-05)
+```bash
+cd scripts/seed
+bun install
+cd ../..
+```
+
+### 7. Verify k6 Installation (UOW-05)
+```bash
+# Option A: Native k6
+k6 version
+
+# Option B: Docker k6 image
+docker pull grafana/k6:latest
+```
 
 ## CI Execution Mapping (Phase 1)
 
