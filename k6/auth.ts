@@ -22,7 +22,8 @@ export const options = {
   iterations: 1,
   thresholds: {
     http_req_duration: ["p(95)<500"],
-    http_req_failed: ["rate<0.01"],
+    // Allow up to 60% failure rate since 3/6 requests intentionally return 401
+    http_req_failed: ["rate<0.6"],
   },
 };
 
