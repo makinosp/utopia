@@ -15,7 +15,7 @@ import {
   checkUnauthorized,
   BASE_URL,
   BOOTSTRAP_KEY,
-} from "./harness";
+} from "./harness.ts";
 
 export const options = {
   vus: 1,

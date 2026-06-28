@@ -24,7 +24,7 @@ import {
   checkErrorEnvelope,
   checkPaginationConsistency,
   BASE_URL,
-} from "./harness";
+} from "./harness.ts";
 
 export const options = {
   vus: 1,
