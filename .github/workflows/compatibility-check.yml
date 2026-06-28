@@ -27,6 +27,8 @@ jobs:
           sed -i 's|@localhost:|@postgres:|' .env
           # Allow non-TLS connections in CI test environment
           sed -i 's|APP_STRICT_SSL=true|APP_STRICT_SSL=false|' .env
+          # Set BOOTSTRAP_KEY for application (env_file takes precedence over env vars)
+          sed -i "s|BOOTSTRAP_KEY=replace-me-with-long-random-bootstrap-secret|BOOTSTRAP_KEY=${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}|" .env
 
       - name: Start application stack
         run: |
