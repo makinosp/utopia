@@ -71,7 +71,7 @@ async function seed(): Promise<void> {
         RETURNING id`,
         [
           userId,
-          account.account_type,
+          account.type,
           account.name,
           account.current_balance ?? "0.00",
           account.currency_code,
