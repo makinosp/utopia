@@ -64,6 +64,11 @@ jobs:
           DATABASE_URL: postgres://utopia:utopia@localhost:5432/utopia?sslmode=disable
           BOOTSTRAP_KEY: ${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}
 
+      - name: Set k6 user permissions
+        run: |
+          echo "K6_UID=$(id -u)" >> $GITHUB_ENV
+          echo "K6_GID=$(id -g)" >> $GITHUB_ENV
+
       - name: Run k6 auth tests
         run: |
           docker compose -f docker/docker-compose.yml --profile testing run --rm k6 run \

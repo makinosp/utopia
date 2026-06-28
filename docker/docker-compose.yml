@@ -123,6 +123,7 @@ services:
     image: grafana/k6:latest
     container_name: utopia-k6
     profiles: ["testing"]
+    user: "${K6_UID:-1000}:${K6_GID:-1000}"
     environment:
       APP_BASE_URL: http://utopia-api:3000
       BOOTSTRAP_KEY: ${BOOTSTRAP_KEY:-replace-me-with-long-random-bootstrap-secret}
