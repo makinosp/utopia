@@ -67,6 +67,7 @@ jobs:
       - name: Run k6 auth tests
         run: |
           docker compose -f docker/docker-compose.yml --profile testing run --rm k6 run \
+            --compatibility-mode=extended \
             --env APP_BASE_URL=http://utopia-api:3000 \
             --env BOOTSTRAP_KEY="${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}" \
             --out json=/scripts/k6-results/auth-results.json \
@@ -75,6 +76,7 @@ jobs:
       - name: Run k6 accounts tests
         run: |
           docker compose -f docker/docker-compose.yml --profile testing run --rm k6 run \
+            --compatibility-mode=extended \
             --env APP_BASE_URL=http://utopia-api:3000 \
             --env BOOTSTRAP_KEY="${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}" \
             --out json=/scripts/k6-results/accounts-results.json \
@@ -83,6 +85,7 @@ jobs:
       - name: Run k6 transactions tests
         run: |
           docker compose -f docker/docker-compose.yml --profile testing run --rm k6 run \
+            --compatibility-mode=extended \
             --env APP_BASE_URL=http://utopia-api:3000 \
             --env BOOTSTRAP_KEY="${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}" \
             --out json=/scripts/k6-results/transactions-results.json \

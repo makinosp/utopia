@@ -78,6 +78,7 @@ export K6_OUT="json=${K6_OUTPUT_DIR}/k6-results.json"
 # Run auth tests
 echo "  → Running auth tests..."
 k6 run \
+  --compatibility-mode=extended \
   --env APP_BASE_URL="${APP_BASE_URL}" \
   --env BOOTSTRAP_KEY="${BOOTSTRAP_KEY}" \
   --out "json=${K6_OUTPUT_DIR}/auth-results.json" \
@@ -86,6 +87,7 @@ k6 run \
 # Run accounts tests
 echo "  → Running accounts tests..."
 k6 run \
+  --compatibility-mode=extended \
   --env APP_BASE_URL="${APP_BASE_URL}" \
   --env BOOTSTRAP_KEY="${BOOTSTRAP_KEY}" \
   --out "json=${K6_OUTPUT_DIR}/accounts-results.json" \
@@ -94,6 +96,7 @@ k6 run \
 # Run transactions tests
 echo "  → Running transactions tests..."
 k6 run \
+  --compatibility-mode=extended \
   --env APP_BASE_URL="${APP_BASE_URL}" \
   --env BOOTSTRAP_KEY="${BOOTSTRAP_KEY}" \
   --out "json=${K6_OUTPUT_DIR}/transactions-results.json" \
