@@ -124,17 +124,6 @@ async function seed(): Promise<void> {
       console.log(`  Transaction: ${tx.description} (${tx.amount} ${tx.currency_code})`);
     }
 
-    // Step 5: Store bootstrap key hash (sha256 of the key)
-    const crypto = await import("node:crypto");
-    const keyHash = crypto.createHash("sha256").update(BOOTSTRAP_KEY).digest("hex");
-    await client.query(
-      `INSERT INTO bootstrap_key_usage (key_hash, used_at, used_by)
-       VALUES ($1, NULL, NULL)
-       ON CONFLICT (key_hash) DO NOTHING`,
-      [keyHash],
-    );
-    console.log("  Bootstrap key hash stored");
-
     // Commit transaction
     await client.query("COMMIT");
 

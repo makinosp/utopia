@@ -106,4 +106,4 @@ jobs:
 
       - name: Tear down stack
         if: always()
-        run: docker compose --profile testing down -v
+        run: docker compose -f docker/docker-compose.yml --profile testing down -v
