@@ -80,6 +80,12 @@ jobs:
             --out json=/scripts/k6-results/auth-results.json \
             /scripts/k6/auth.ts
 
+      - name: Reload seed data for accounts tests
+        run: bun run scripts/seed/index.ts
+        env:
+          DATABASE_URL: postgres://utopia:utopia@localhost:5432/utopia?sslmode=disable
+          BOOTSTRAP_KEY: ${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}
+
       - name: Run k6 accounts tests
         run: |
           docker compose -f docker/docker-compose.yml --profile testing run --rm k6 run \
@@ -88,6 +94,12 @@ jobs:
             --env BOOTSTRAP_KEY="${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}" \
             --out json=/scripts/k6-results/accounts-results.json \
             /scripts/k6/accounts.ts
+
+      - name: Reload seed data for transactions tests
+        run: bun run scripts/seed/index.ts
+        env:
+          DATABASE_URL: postgres://utopia:utopia@localhost:5432/utopia?sslmode=disable
+          BOOTSTRAP_KEY: ${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}
 
       - name: Run k6 transactions tests
         run: |
