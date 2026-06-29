@@ -15,6 +15,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Set up Docker Compose
         run: |
           docker compose --version
@@ -44,11 +49,6 @@ jobs:
           echo "Application did not become healthy within 60s"
           docker compose logs utopia-api
           exit 1
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
 
       - name: Install seed dependencies
         working-directory: scripts/seed
