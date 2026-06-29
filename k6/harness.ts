@@ -109,7 +109,7 @@ export function authenticatedHeaders(
  * { "data": [...], "meta": { "pagination": {...} } }
  */
 export function checkListEnvelope(
-  res: ReturnType<typeof http.get>,
+  res: http.Response,
   endpoint: string,
   expectedMinItems = 0,
 ): boolean {
@@ -157,7 +157,7 @@ export function checkListEnvelope(
  * { "data": {...} }
  */
 export function checkSingleEnvelope(
-  res: ReturnType<typeof http.get>,
+  res: http.Response,
   endpoint: string,
 ): boolean {
   const checks: Record<string, (r: typeof res) => boolean> = {
@@ -228,7 +228,7 @@ export function checkResourceStructure(
  * Check that a response is a 204 No Content (for DELETE operations).
  */
 export function checkNoContent(
-  res: ReturnType<typeof http.del>,
+  res: http.Response,
   endpoint: string,
 ): boolean {
   return check(res, {
@@ -241,7 +241,7 @@ export function checkNoContent(
  * { "message": "...", "errors": {...} }
  */
 export function checkErrorEnvelope(
-  res: ReturnType<typeof http.res>,
+  res: http.Response,
   endpoint: string,
   expectedStatus: number,
 ): boolean {
@@ -272,7 +272,7 @@ export function checkErrorEnvelope(
  * Check that a response is 401 Unauthorized (for unauthenticated requests).
  */
 export function checkUnauthorized(
-  res: ReturnType<typeof http.res>,
+  res: http.Response,
   endpoint: string,
 ): boolean {
   return checkErrorEnvelope(res, endpoint, 401);
@@ -282,7 +282,7 @@ export function checkUnauthorized(
  * Check pagination meta values are consistent.
  */
 export function checkPaginationConsistency(
-  res: ReturnType<typeof http.get>,
+  res: http.Response,
   endpoint: string,
 ): boolean {
   return check(res, {
