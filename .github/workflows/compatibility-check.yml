@@ -20,15 +20,9 @@ jobs:
           docker compose --version
 
       - name: Create .env for CI
-        run: |
-          cp .env.example .env
-          # Override DATABASE_URL for Docker Compose network
-          sed -i 's|sslmode=require|sslmode=disable|' .env
-          sed -i 's|@localhost:|@postgres:|' .env
-          # Allow non-TLS connections in CI test environment
-          sed -i 's|APP_STRICT_SSL=true|APP_STRICT_SSL=false|' .env
-          # Set BOOTSTRAP_KEY for application (env_file takes precedence over env vars)
-          sed -i "s|BOOTSTRAP_KEY=replace-me-with-long-random-bootstrap-secret|BOOTSTRAP_KEY=${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}|" .env
+        run: bun run scripts/ci/setup-env.ts
+        env:
+          BOOTSTRAP_KEY: ${{ secrets.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026' }}
 
       - name: Start application stack
         run: |
