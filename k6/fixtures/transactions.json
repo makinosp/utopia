@@ -1,0 +1,320 @@
+{
+  "listEnvelope": {
+    "type": "object",
+    "required": [
+      "data",
+      "meta"
+    ],
+    "properties": {
+      "data": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/transactionResource"
+        }
+      },
+      "meta": {
+        "type": "object",
+        "required": [
+          "pagination"
+        ],
+        "properties": {
+          "pagination": {
+            "type": "object",
+            "required": [
+              "total",
+              "count",
+              "per_page",
+              "current_page",
+              "total_pages"
+            ],
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "per_page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "current_page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "total_pages": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "definitions": {
+      "transactionResource": {
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "attributes",
+          "links"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attributes": {
+            "$ref": "#/definitions/transactionAttributes"
+          },
+          "links": {
+            "type": "array"
+          }
+        }
+      },
+      "transactionAttributes": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "updated_at",
+          "user",
+          "group_id",
+          "type",
+          "date",
+          "description",
+          "amount",
+          "currency_code",
+          "reconciled"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "type": "string"
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "withdrawal",
+              "deposit",
+              "transfer"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currency_code": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destination_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destination_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reconciled": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "singleEnvelope": {
+    "type": "object",
+    "required": [
+      "data"
+    ],
+    "properties": {
+      "data": {
+        "$ref": "#/definitions/transactionResource"
+      }
+    },
+    "definitions": {
+      "transactionResource": {
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "attributes",
+          "links"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attributes": {
+            "type": "object",
+            "required": [
+              "created_at",
+              "updated_at",
+              "user",
+              "group_id",
+              "type",
+              "date",
+              "description",
+              "amount",
+              "currency_code",
+              "reconciled"
+            ]
+          },
+          "links": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  },
+  "createRequest": {
+    "type": "object",
+    "required": [
+      "transaction_type",
+      "description",
+      "amount",
+      "currency_code"
+    ],
+    "properties": {
+      "group_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "transaction_type": {
+        "type": "string",
+        "enum": [
+          "withdrawal",
+          "deposit",
+          "transfer"
+        ]
+      },
+      "description": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "string"
+      },
+      "currency_code": {
+        "type": "string"
+      },
+      "date": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "source_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "destination_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "category_name": {
+        "type": "string"
+      },
+      "notes": {
+        "type": "string"
+      },
+      "reconciled": {
+        "type": "boolean"
+      }
+    }
+  },
+  "updateRequest": {
+    "type": "object",
+    "properties": {
+      "transaction_type": {
+        "type": "string",
+        "enum": [
+          "withdrawal",
+          "deposit",
+          "transfer"
+        ]
+      },
+      "description": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "string"
+      },
+      "currency_code": {
+        "type": "string"
+      },
+      "date": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "source_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "destination_id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "category_name": {
+        "type": "string"
+      },
+      "notes": {
+        "type": "string"
+      },
+      "reconciled": {
+        "type": "boolean"
+      }
+    }
+  }
+}

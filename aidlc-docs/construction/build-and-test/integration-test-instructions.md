@@ -122,6 +122,60 @@ cargo run
 cargo test --test db_integration_test -- --ignored
 ```
 
+### Scenario 3: Accounts API Integration (Firefly-III Compatibility)
+Description:
+- Verify accounts endpoints return Firefly-III compatible envelopes with correct pagination
+
+Setup:
+- Application running with Postgres (see Setup Integration Environment)
+- Valid auth token available
+
+Test steps:
+1. List accounts with pagination:
+```bash
+curl -s "http://localhost:3000/api/v1/accounts?page=1&limit=10" \
+  -H "Authorization: Bearer ${TOKEN_A}" | jq .
+```
+2. Assert response contains `data` array and `meta` with `pagination` object
+3. Assert each item has `type`, `id`, `attributes`, `links` structure
+4. Filter by type:
+```bash
+curl -s "http://localhost:3000/api/v1/accounts?type=asset" \
+  -H "Authorization: Bearer ${TOKEN_A}" | jq .
+```
+
+Expected results:
+- All responses follow Firefly-III envelope format
+- Pagination meta contains `total`, `count`, `per_page`, `current_page`, `total_pages`
+
+### Scenario 4: Transactions API Integration (Firefly-III Compatibility)
+Description:
+- Verify transactions endpoints return Firefly-III compatible envelopes
+
+Setup:
+- Application running with Postgres
+- Valid auth token available
+- At least one account exists
+
+Test steps:
+1. List transactions:
+```bash
+curl -s "http://localhost:3000/api/v1/transactions?page=1&limit=25" \
+  -H "Authorization: Bearer ${TOKEN_A}" | jq .
+```
+2. Create a transaction:
+```bash
+curl -s -X POST http://localhost:3000/api/v1/transactions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN_A}" \
+  -d '{"type":"withdrawal","amount":"10.00","description":"test","source_account_id":1,"destination_account_id":2}' | jq .
+```
+3. Assert response envelope structure and resource type
+
+Expected results:
+- List returns paginated envelope
+- Create returns single-resource envelope with `data.type == "transactions"`
+
 ## Cleanup
 ```bash
 docker compose -f docker/docker-compose.yml down -v

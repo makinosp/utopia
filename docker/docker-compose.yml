@@ -8,11 +8,18 @@ services:
     env_file:
       - ../.env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/metrics || exit 1"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     networks:
       - internal
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
 
   postgres:
     image: postgres:17.2-alpine3.21
@@ -23,6 +30,8 @@ services:
       POSTGRES_PASSWORD: utopia
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
       - internal
 
@@ -109,6 +118,28 @@ services:
       DATA_SOURCE_NAME: postgres://utopia:utopia@postgres:5432/utopia?sslmode=disable
     networks:
       - internal
+
+  k6:
+    image: grafana/k6:latest
+    container_name: utopia-k6
+    profiles: ["testing"]
+    user: "${K6_UID:-1000}:${K6_GID:-1000}"
+    environment:
+      APP_BASE_URL: http://utopia-api:3000
+      BOOTSTRAP_KEY: ${BOOTSTRAP_KEY:-replace-me-with-long-random-bootstrap-secret}
+      DATABASE_URL: postgres://utopia:utopia@postgres:5432/utopia?sslmode=disable
+    volumes:
+      - ../k6:/scripts/k6:ro
+      - ../scripts/seed:/scripts/seed:ro
+      - ../k6-results:/scripts/k6-results
+    depends_on:
+      utopia-api:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+    networks:
+      - internal
+    working_dir: /scripts/k6
 
 volumes:
   postgres_data:

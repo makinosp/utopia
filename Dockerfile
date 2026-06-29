@@ -1,4 +1,4 @@
-FROM rust:1.86.0-alpine3.21 AS builder
+FROM rust:1.88-alpine3.21 AS builder
 
 WORKDIR /app
 
@@ -14,6 +14,7 @@ FROM alpine:3.21
 WORKDIR /app
 
 RUN adduser -D utopia
+RUN apk add --no-cache curl
 
 COPY --from=builder /app/target/release/utopia /app/utopia
 COPY migrations /app/migrations
