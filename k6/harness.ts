@@ -208,11 +208,44 @@ export function checkSingleEnvelope(
 }
 
 /**
+ * Firefly-III compatible resource structure interface.
+ */
+export interface FireflyResource {
+  type: string;
+  id: string;
+  attributes: Record<string, unknown>;
+  links: unknown[];
+}
+
+/**
+ * Firefly-III list envelope interface.
+ */
+export interface FireflyListEnvelope<T> {
+  data: T[];
+  meta: {
+    pagination: {
+      total: number;
+      count: number;
+      per_page: number;
+      current_page: number;
+      total_pages: number;
+    };
+  };
+}
+
+/**
+ * Firefly-III single envelope interface.
+ */
+export interface FireflySingleEnvelope<T> {
+  data: T;
+}
+
+/**
  * Check that a resource object has the required Firefly-III fields:
  * type, id, attributes, links
  */
 export function checkResourceStructure(
-  resource: Record<string, unknown>,
+  resource: FireflyResource,
   endpoint: string,
 ): boolean {
   return check(resource, {
@@ -328,3 +361,4 @@ export function checkPaginationConsistency(
 
 export { http, check, sleep };
 export { BASE_URL, BOOTSTRAP_KEY, DYNAMIC_FIELDS };
+export { FireflyResource, FireflyListEnvelope, FireflySingleEnvelope };

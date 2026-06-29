@@ -23,6 +23,9 @@ import {
   checkErrorEnvelope,
   checkPaginationConsistency,
   BASE_URL,
+  FireflyResource,
+  FireflyListEnvelope,
+  FireflySingleEnvelope,
 } from "./harness.ts";
 
 export const options = {
@@ -35,29 +38,9 @@ export const options = {
   },
 };
 
-interface AccountResource {
-  type: string;
-  id: string;
-  attributes: Record<string, unknown>;
-  links: unknown[];
-}
-
-interface ListEnvelope {
-  data: AccountResource[];
-  meta: {
-    pagination: {
-      total: number;
-      count: number;
-      per_page: number;
-      current_page: number;
-      total_pages: number;
-    };
-  };
-}
-
-interface SingleEnvelope {
-  data: AccountResource;
-}
+type AccountResource = FireflyResource;
+type ListEnvelope = FireflyListEnvelope<AccountResource>;
+type SingleEnvelope = FireflySingleEnvelope<AccountResource>;
 
 export default function (): void {
   const headers = authenticatedHeaders();
