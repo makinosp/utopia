@@ -7,8 +7,8 @@
     "seed": "bun run index.ts"
   },
   "dependencies": {
-    "pg": "^8.13.1",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/pg": "^8.11.10",

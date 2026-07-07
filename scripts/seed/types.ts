@@ -21,7 +21,7 @@ export interface AccountSeed {
 
 export interface TransactionSeed {
   group_id: string;
-  transaction_type: "withdrawal" | "deposit" | "transfer";
+  transaction_type: 'withdrawal' | 'deposit' | 'transfer';
   description: string;
   amount: string;
   currency_code: string;
