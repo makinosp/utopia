@@ -928,3 +928,17 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 - Updated aidlc-state.md: Marked UOW-05 Build and Test as COMPLETED
 
 ---
+
+## Post-Workflow — CI Phase 2 Reclassification (k6 as Phase 2)
+
+**Timestamp**: 2026-07-07T00:00:00Z
+**User Input**: "k6でのテストをCI Phase 2として扱ってください。"
+**AI Response**: Reclassified the k6 Compatibility Verification Suite as CI Phase 2. Actions taken:
+- Renamed `.github/workflows/compatibility-check.yml` → `.github/workflows/ci-phase2.yml` (via `git mv`)
+- Updated workflow `name:` to "CI Phase 2 — k6 Compatibility Verification Suite"
+- Updated `aidlc-state.md` Post-Workflow section: CI Phase 2 Hardening (SKIPPED) replaced with CI Phase 2 (k6 Compatibility Verification Suite) — COMPLETED
+- Updated `build-and-test-summary.md` CI Automation Status: added Phase 2 workflow entry and required k6 checks
+- Updated `build-instructions.md` CI Execution Mapping: added Phase 2 section (trigger policy, blocking k6 checks, prerequisites)
+**Context**: User requested k6 tests be treated as CI Phase 2. Previously CI Phase 2 Hardening was marked SKIPPED (user decision on 2026-06-11); the k6 compatibility workflow now fulfills the Phase 2 slot.
+
+---

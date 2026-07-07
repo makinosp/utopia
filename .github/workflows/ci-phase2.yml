@@ -1,4 +1,4 @@
-name: Compatibility Verification Suite
+name: CI Phase 2 — k6 Compatibility Verification Suite
 
 on:
   pull_request:
