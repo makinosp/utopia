@@ -6,6 +6,7 @@
 - Optional observability stack: Prometheus and Grafana containers from compose profile
 - k6 testing: k6 CLI (v0.50+) or Docker k6 image (grafana/k6:latest)
 - Seed runtime: Bun runtime (v1.0+) for seed data generator
+- TypeScript tooling: pnpm (v9+) for oxlint and oxfmt
 - System requirements: Linux host, 4+ CPU cores, 8+ GB RAM, 20+ GB free disk
 
 ## Required Environment Variables
@@ -43,7 +44,28 @@ cp .env.example .env
 # Edit .env values for your environment
 ```
 
-### 3. Build Application
+### 3. TypeScript Lint and Format
+All TypeScript source files (scripts/, k6/, and config files) must pass formatting
+and lint checks before merge.
+
+```bash
+# Install dependencies (first time only)
+pnpm install
+
+# Check formatting
+pnpm fmt:check
+
+# Lint
+pnpm lint
+
+# Fix formatting issues
+pnpm fmt
+
+# Fix auto-fixable lint issues
+pnpm lint:fix
+```
+
+### 4. Build Application
 ```bash
 cargo fmt --all --check
 cargo clippy --all-targets --all-features -- -D warnings
@@ -51,12 +73,12 @@ cargo build
 cargo build --release
 ```
 
-### 4. Build Container Image
+### 5. Build Container Image
 ```bash
 docker build -t utopia-api:0.1.0 .
 ```
 
-### 5. Verify Build Output
+### 6. Verify Build Output
 Expected output:
 - Cargo build completes with Finished profile messages
 - Docker build completes with tagged image utopia-api:0.1.0
@@ -66,14 +88,14 @@ Build artifacts:
 - target/release/utopia
 - Docker image utopia-api:0.1.0
 
-### 6. Build Seed Data Generator (UOW-05)
+### 7. Build Seed Data Generator (UOW-05)
 ```bash
 cd scripts/seed
 bun install
 cd ../..
 ```
 
-### 7. Verify k6 Installation (UOW-05)
+### 8. Verify k6 Installation (UOW-05)
 ```bash
 # Option A: Native k6
 k6 version

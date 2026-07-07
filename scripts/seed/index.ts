@@ -9,24 +9,22 @@
  * Environment: DATABASE_URL (e.g., postgres://utopia:utopia@localhost:5432/utopia)
  */
 
-import "dotenv/config";
-import { Client } from "pg";
-import { SEED_ACCOUNTS } from "./accounts";
-import { SEED_TRANSACTIONS } from "./transactions";
-import type { AccountSeed, TransactionSeed, UserSeed } from "./types";
-
-const BOOTSTRAP_KEY = process.env.BOOTSTRAP_KEY || "replace-me-with-long-random-bootstrap-secret";
+import 'dotenv/config';
+import type { UserSeed } from './types';
+import { Client } from 'pg';
+import { SEED_ACCOUNTS } from './accounts';
+import { SEED_TRANSACTIONS } from './transactions';
 
 const SEED_USER: UserSeed = {
-  email: "test-compat@utopia.local",
-  password: "CompatTestPassword2026!",
-  primary_currency_code: "JPY",
+  email: 'test-compat@utopia.local',
+  password: 'CompatTestPassword2026!',
+  primary_currency_code: 'JPY',
 };
 
 async function seed(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    console.error("ERROR: DATABASE_URL environment variable is required");
+    console.error('ERROR: DATABASE_URL environment variable is required');
     process.exit(1);
   }
 
@@ -34,18 +32,18 @@ async function seed(): Promise<void> {
 
   try {
     await client.connect();
-    console.log("Connected to database");
+    console.log('Connected to database');
 
     // Begin transaction
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     // Step 1: Truncate all tables (CASCADE handles FK constraints)
-    console.log("Truncating all tables...");
-    await client.query("TRUNCATE TABLE transaction_journals CASCADE");
-    await client.query("TRUNCATE TABLE accounts CASCADE");
-    await client.query("TRUNCATE TABLE personal_access_tokens CASCADE");
-    await client.query("TRUNCATE TABLE bootstrap_key_usage CASCADE");
-    await client.query("TRUNCATE TABLE users CASCADE");
+    console.log('Truncating all tables...');
+    await client.query('TRUNCATE TABLE transaction_journals CASCADE');
+    await client.query('TRUNCATE TABLE accounts CASCADE');
+    await client.query('TRUNCATE TABLE personal_access_tokens CASCADE');
+    await client.query('TRUNCATE TABLE bootstrap_key_usage CASCADE');
+    await client.query('TRUNCATE TABLE users CASCADE');
 
     // Step 2: Insert test user
     console.log(`Inserting test user: ${SEED_USER.email}`);
@@ -73,7 +71,7 @@ async function seed(): Promise<void> {
           userId,
           account.type,
           account.name,
-          account.current_balance ?? "0.00",
+          account.current_balance ?? '0.00',
           account.currency_code,
           account.active,
           account.include_net_worth,
@@ -95,10 +93,8 @@ async function seed(): Promise<void> {
     // Step 4: Insert transactions (resolve account names to IDs)
     console.log(`Inserting ${SEED_TRANSACTIONS.length} transactions...`);
     for (const tx of SEED_TRANSACTIONS) {
-      const sourceId = tx.source_name ? accountNameToId.get(tx.source_name) ?? null : null;
-      const destinationId = tx.destination_name
-        ? accountNameToId.get(tx.destination_name) ?? null
-        : null;
+      const sourceId = tx.source_name ? (accountNameToId.get(tx.source_name) ?? null) : null;
+      const destinationId = tx.destination_name ? (accountNameToId.get(tx.destination_name) ?? null) : null;
 
       await client.query(
         `INSERT INTO transaction_journals (
@@ -125,16 +121,16 @@ async function seed(): Promise<void> {
     }
 
     // Commit transaction
-    await client.query("COMMIT");
+    await client.query('COMMIT');
 
-    console.log("\n=== Seed Summary ===");
+    console.log('\n=== Seed Summary ===');
     console.log(`  User: 1 (${SEED_USER.email})`);
     console.log(`  Accounts: ${SEED_ACCOUNTS.length}`);
     console.log(`  Transactions: ${SEED_TRANSACTIONS.length}`);
-    console.log("Seed complete.");
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Seed failed:", err);
+    console.log('Seed complete.');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Seed failed:', error);
     process.exit(1);
   } finally {
     await client.end();

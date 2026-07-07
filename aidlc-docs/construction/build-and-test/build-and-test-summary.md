@@ -10,6 +10,10 @@
   - Docker image utopia-api:0.1.0
   - Seed data generator (Bun/TypeScript at `scripts/seed/`)
   - k6 compatibility test suite (at `k6/`)
+- TypeScript tooling: oxlint (linter) and oxfmt (formatter) via pnpm
+  - Config: `oxlint.config.ts` and `oxfmt.config.ts`
+  - Scope: `scripts/`, `k6/`, and project config files
+  - CI enforcement: Local check (not enforced in CI Phase 1)
 - Build time: ~5s (debug), ~8s (test with integration)
 
 ## Test Execution Summary
@@ -87,6 +91,24 @@
   envelope validation, artifact upload of k6 results
 - Deployment automation: not included in current phase
 - Compatibility workflow: automated on PR to main (k6 suite + artifact upload)
+
+## TypeScript Code Quality
+
+- **Formatting**: oxfmt (single quotes, 120 print width, sorted imports)
+- **Linting**: oxlint with ESLint, Oxc, TypeScript, Unicorn, and Promise rules
+- **Scope**: `scripts/ci/`, `scripts/seed/`, `k6/`, `oxlint.config.ts`, `oxfmt.config.ts`
+- **Required local checks** (must pass before committing):
+  ```bash
+  pnpm fmt:check   # Verify formatting
+  pnpm lint        # Verify lint rules
+  ```
+- **Auto-fix commands**:
+  ```bash
+  pnpm fmt         # Format all files
+  pnpm lint:fix    # Auto-fix lint issues
+  ```
+- **Note**: TypeScript lint/format is not enforced in CI Phase 1. These are
+  local development quality gates.
 
 ## Overall Status
 

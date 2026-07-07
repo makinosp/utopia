@@ -29,6 +29,7 @@
 ## Stage Progress
 
 ### 🔵 INCEPTION PHASE (US-021/US-022)
+
 - [x] Workspace Detection
 - [x] Requirements Analysis
 - [x] Workflow Planning
@@ -99,3 +100,7 @@
 - [x] CI Phase 2 (k6 Compatibility Verification Suite) — COMPLETED (GitHub
       Actions workflow at `.github/workflows/ci-phase2.yml`; reclassified from
       the UOW-05 compatibility-check workflow per user request on 2026-07-07)
+- [x] TypeScript Linter/Formatter Setup — COMPLETED (oxfmt.config.ts and
+      oxlint.config.ts customized for project; root package.json with pnpm added
+      for oxlint/oxfmt devDependencies; Build and Test docs updated to require
+      lint/format passing)
