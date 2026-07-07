@@ -8,30 +8,32 @@ const ENV_PATH = '.env';
  * These values ensure the application runs correctly within the GitHub Actions Docker network.
  */
 const overrides: Record<string, string> = {
-  'DATABASE_URL': 'postgres://utopia:utopia@postgres:5432/utopia?sslmode=disable',
-  'APP_STRICT_SSL': 'false',
-  'BOOTSTRAP_KEY': process.env.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026',
+  DATABASE_URL: 'postgres://utopia:utopia@postgres:5432/utopia?sslmode=disable',
+  APP_STRICT_SSL: 'false',
+  BOOTSTRAP_KEY: process.env.BOOTSTRAP_KEY || 'ci-test-bootstrap-key-2026',
 };
 
-function setupEnv() {
+function setupEnv(): void {
   try {
     const content = readFileSync(ENV_EXAMPLE_PATH, 'utf8');
     const lines = content.split('\n');
 
-    const result = lines.map(line => {
-      // Handle comments or empty lines
-      if (!line || line.trim().startsWith('#')) {
+    const result = lines
+      .map((line) => {
+        // Handle comments or empty lines
+        if (!line || line.trim().startsWith('#')) {
+          return line;
+        }
+
+        const [key] = line.split('=');
+        const trimmedKey = key.trim();
+
+        if (trimmedKey && overrides[trimmedKey]) {
+          return `${trimmedKey}=${overrides[trimmedKey]}`;
+        }
         return line;
-      }
-
-      const [key] = line.split('=');
-      const trimmedKey = key.trim();
-
-      if (trimmedKey && overrides[trimmedKey]) {
-        return `${trimmedKey}=${overrides[trimmedKey]}`;
-      }
-      return line;
-    }).join('\n');
+      })
+      .join('\n');
 
     writeFileSync(ENV_PATH, result);
     console.log('✅ .env file generated for CI successfully');
