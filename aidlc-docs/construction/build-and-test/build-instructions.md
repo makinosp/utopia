@@ -105,6 +105,29 @@ Advisory-only checks in Phase 1:
 Branch protection expected required check:
 - `quality-build-test`
 
+## CI Execution Mapping (Phase 2 — k6 Compatibility Verification Suite)
+
+Implemented workflow:
+- `.github/workflows/ci-phase2.yml` (reclassified from the former
+  `compatibility-check.yml` per user request on 2026-07-07)
+
+Trigger policy:
+- pull_request: main
+- push: main
+
+Blocking checks in Phase 2:
+- k6 auth tests (6 scenarios)
+- k6 accounts tests (7 scenarios)
+- k6 transactions tests (8 scenarios)
+- Firefly-III envelope validation (list/single/error envelope, 204 No Content,
+  401 Unauthorized, pagination consistency)
+- k6 result artifact upload (retention 30 days)
+
+Prerequisites for Phase 2:
+- Docker Compose stack (utopia-api, postgres, caddy) started in CI
+- Seed data loaded via `scripts/seed/index.ts` before each test group
+- `BOOTSTRAP_KEY` provided via GitHub secret (fallback CI test key)
+
 ## Troubleshooting
 
 ### Dependency Resolution Failures

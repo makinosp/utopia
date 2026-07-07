@@ -77,9 +77,14 @@
 ## CI Automation Status
 
 - Phase 1 CI workflow implemented: `.github/workflows/ci-phase1.yml`
-- Compatibility CI workflow: `.github/workflows/compatibility-check.yml`
-- Required CI checks: format, clippy, debug/release build, test
-- Advisory CI check: cargo-audit (warning-only)
+- Phase 2 CI workflow implemented: `.github/workflows/ci-phase2.yml` (k6
+  Compatibility Verification Suite — reclassified from the former
+  `compatibility-check.yml` per user request on 2026-07-07)
+- Phase 1 required CI checks: format, clippy, debug/release build, test
+- Phase 1 advisory CI check: cargo-audit (warning-only)
+- Phase 2 required CI checks: k6 auth/accounts/transactions compatibility
+  scenarios against a running stack (Docker Compose + seed data), Firefly-III
+  envelope validation, artifact upload of k6 results
 - Deployment automation: not included in current phase
 - Compatibility workflow: automated on PR to main (k6 suite + artifact upload)
 

@@ -59,7 +59,7 @@ Shell script that orchestrates:
 | File | Change |
 |------|--------|
 | `docker/docker-compose.yml` | Added `k6` service (grafana/k6:latest) with testing profile, volume mounts for k6/ and scripts/seed/, k6_results volume |
-| `.github/workflows/compatibility-check.yml` | CI workflow: start stack, health check, seed data, run k6 suite, upload artifacts |
+| `.github/workflows/ci-phase2.yml` | CI Phase 2 workflow (k6 Compatibility Verification Suite): start stack, health check, seed data, run k6 suite, upload artifacts |
 | `.env.example` | Added `APP_BASE_URL` and `K6_OUTPUT_DIR` variables |
 
 ## How to Run
@@ -93,7 +93,7 @@ docker compose run --rm k6 run /scripts/k6/transactions.ts
 ```
 
 ### CI (GitHub Actions)
-The compatibility-check.yml workflow runs automatically on every PR to main. Results are uploaded as artifacts.
+The ci-phase2.yml workflow (CI Phase 2 — k6 Compatibility Verification Suite) runs automatically on every PR to main. Results are uploaded as artifacts.
 
 ## Architecture
 

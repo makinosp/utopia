@@ -96,5 +96,6 @@
 
 - [x] CI Phase 1 Implementation — COMPLETED (GitHub Actions baseline at
       `.github/workflows/ci-phase1.yml`)
-- [x] CI Phase 2 Hardening — SKIPPED (user decision; no actionable items at this
-      time)
+- [x] CI Phase 2 (k6 Compatibility Verification Suite) — COMPLETED (GitHub
+      Actions workflow at `.github/workflows/ci-phase2.yml`; reclassified from
+      the UOW-05 compatibility-check workflow per user request on 2026-07-07)
