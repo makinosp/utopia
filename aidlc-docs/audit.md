@@ -449,24 +449,24 @@ value-object round trips」の方が設定に適合
 ### 具体的な改善提案
 
 1. **耐障害性設計の再検討**:
-   - 選択A → 選択Bへ変更
-   - 構造化ログ/アラート発行のための最低限のリトライ戦略を導入
+    - 選択A → 選択Bへ変更
+    - 構造化ログ/アラート発行のための最低限のリトライ戦略を導入
 
 2. **キャッシュ戦略の再評価**:
-   - 選択A → 選択Bへ変更
-   - パフォーマンス要件達成のための短TTLキャッシュを導入
+    - 選択A → 選択Bへ変更
+    - パフォーマンス要件達成のための短TTLキャッシュを導入
 
 3. **論理コンポーネント設計の簡素化**:
-   - 選択B → 選択Aへ変更
-   - 単一ノード環境での複雑性を削減
+    - 選択B → 選択Aへ変更
+    - 単一ノード環境での複雑性を削減
 
 4. **アラート設計の具体化**:
-   - 具体的なしきい値とエスカレーションルールを追加
-   - 例: 「2回の警告 → 1時間以内に改善なければ重大アラート」
+    - 具体的なしきい値とエスカレーションルールを追加
+    - 例: 「2回の警告 → 1時間以内に改善なければ重大アラート」
 
 5. **プロパティベーステスト統合の調整**:
-   - 選択A → 選択Bへ変更
-   - 設定の「部分的な適用」に準拠
+    - 選択A → 選択Bへ変更
+    - 設定の「部分的な適用」に準拠
 
 ### 総合評価
 
@@ -800,13 +800,14 @@ stage executed with Docker-based integration testcontainers.
 **Timestamp**: 2026-06-20T00:01:00Z
 **User Input**: (automatic — test suite execution)
 **AI Response**: All tests passed:
+
 - Unit tests: 8/8 passed
 - Core tests: 33/33 passed (includes new PBT tests: `auth_error_serialization_round_trip`, `token_format_round_trip`)
 - Auth integration tests: 3 tests (ignored — require Docker daemon)
 - Accounts API tests: 7 tests (1 passed, 6 ignored — require Docker)
 - Transactions API tests: 6 tests (ignored — require Docker)
 - DB integration test: 1 (ignored — requires Docker)
-**Context**: Build and Test execution results.
+  **Context**: Build and Test execution results.
 
 ---
 
@@ -842,11 +843,12 @@ stage executed with Docker-based integration testcontainers.
 **Timestamp**: 2026-06-27T00:03:00Z
 **User Input**: "1にします。回答記入してください。"
 **AI Response**: User selected Option 1 (recommended configuration). Updated answers:
+
 - Q3: B (OpenAPI spec + sample responses)
 - Q5: A (Strict mode)
 - Q7: B (Seed data)
-All answers received. Proceeding to generate requirements document.
-**Context**: Requirements Analysis answers completed for UOW-05.
+  All answers received. Proceeding to generate requirements document.
+  **Context**: Requirements Analysis answers completed for UOW-05.
 
 ---
 
@@ -855,6 +857,7 @@ All answers received. Proceeding to generate requirements document.
 **Timestamp**: 2026-06-27T00:04:00Z
 **User Input**: "Using AI-DLC, このファイルを回答しました。続行してください。"
 **AI Response**: All 7 [Answer] fields confirmed in uow05-requirement-verification-questions.md:
+
 - Q1: A (Firefly-III v6.x latest stable)
 - Q2: B (Currently implemented endpoints only)
 - Q3: B (Manually define expected response schemas from Firefly-III OpenAPI spec)
@@ -866,8 +869,8 @@ All answers received. Proceeding to generate requirements document.
 No blocking ambiguities detected. Proceeding to generate requirements.md for UOW-05.
 **Context**: Requirements Analysis answers confirmed. Generating requirements document.
 
-
 ## INCEPTION — Workflow Planning Approval (UOW-05)
+
 **Timestamp**: 2026-06-27T04:04:50Z
 **User Input**: "Using AI-DLC, 承認してWorkflow Planningに進んでください。"
 **AI Response**: Workflow Planning for UOW-05 approved. Execution plan created with phases: NFR Requirements → NFR Design → Code Generation → Build & Test. Transitioning to NFR Requirements stage.
@@ -876,6 +879,7 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 ---
 
 ## INCEPTION — Workflow Planning Approval Response (UOW-05)
+
 **Timestamp**: 2026-06-27T04:34:51Z
 **User Input**: "承認して続行します。"
 **AI Response**: Workflow Planning for UOW-05 approved. Proceeding to NFR Requirements stage.
@@ -884,6 +888,7 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 ---
 
 ## CONSTRUCTION — Code Generation Part 1 Approval (UOW-05)
+
 **Timestamp**: 2026-06-27T05:00:00Z
 **User Input**: "Using AI-DLC, Code Generation Part 1を承認します。Code Generation Part 2に進んでください。"
 **AI Response**: Code Generation Part 1 plan approved. Proceeding to Part 2 execution: creating seed data generator, k6 fixtures, test harness, test scripts, runner script, Docker Compose service, GitHub Actions workflow, and .env.example updates.
@@ -892,9 +897,11 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 ---
 
 ## CONSTRUCTION — Code Generation Part 2 Execution (UOW-05)
+
 **Timestamp**: 2026-06-27T05:01:00Z
 **User Input**: (automatic — Part 2 execution)
 **AI Response**: All 12 steps executed:
+
 - Step 1: Created seed data generator (scripts/seed/) — package.json, index.ts, types.ts, accounts.ts, transactions.ts
 - Step 2: Created k6 test fixtures (k6/fixtures/) — auth.json, accounts.json, transactions.json
 - Step 3: Created k6 test harness (k6/harness.ts) — shared utilities for auth, validation, pagination
@@ -907,7 +914,7 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 - Step 10: Updated .env.example with k6 environment variables
 - Step 11: Created code summary document (aidlc-docs/construction/compatibility-verification-suite/code/code-summary.md)
 - Step 12: Validated all artifacts — all files in correct locations, no aidlc-docs/ pollution
-**Context**: Code Generation Part 2 execution complete for UOW-05 Compatibility Verification Suite.
+  **Context**: Code Generation Part 2 execution complete for UOW-05 Compatibility Verification Suite.
 
 ---
 
@@ -919,6 +926,7 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 **Context**: Build and Test stage for UOW-05 Compatibility Verification Suite. All units (UOW-01 through UOW-05) now complete through Build and Test.
 
 ### Actions Taken
+
 - Updated build-instructions.md: Added k6/Bun prerequisites, seed generator build step, k6 installation verification
 - Updated unit-test-instructions.md: Added firefly_error_contract_test, UOW-05 compatibility contract test table
 - Updated integration-test-instructions.md: Added Scenario 3 (Accounts API) and Scenario 4 (Transactions API) for Firefly-III compatibility
@@ -934,12 +942,13 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 **Timestamp**: 2026-07-07T00:00:00Z
 **User Input**: "k6でのテストをCI Phase 2として扱ってください。"
 **AI Response**: Reclassified the k6 Compatibility Verification Suite as CI Phase 2. Actions taken:
+
 - Renamed `.github/workflows/compatibility-check.yml` → `.github/workflows/ci-phase2.yml` (via `git mv`)
 - Updated workflow `name:` to "CI Phase 2 — k6 Compatibility Verification Suite"
 - Updated `aidlc-state.md` Post-Workflow section: CI Phase 2 Hardening (SKIPPED) replaced with CI Phase 2 (k6 Compatibility Verification Suite) — COMPLETED
 - Updated `build-and-test-summary.md` CI Automation Status: added Phase 2 workflow entry and required k6 checks
 - Updated `build-instructions.md` CI Execution Mapping: added Phase 2 section (trigger policy, blocking k6 checks, prerequisites)
-**Context**: User requested k6 tests be treated as CI Phase 2. Previously CI Phase 2 Hardening was marked SKIPPED (user decision on 2026-06-11); the k6 compatibility workflow now fulfills the Phase 2 slot.
+  **Context**: User requested k6 tests be treated as CI Phase 2. Previously CI Phase 2 Hardening was marked SKIPPED (user decision on 2026-06-11); the k6 compatibility workflow now fulfills the Phase 2 slot.
 
 ---
 
@@ -950,6 +959,7 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 **AI Response**: Gathered project context — Rust/Axum backend with TypeScript files in k6/ (compatibility tests) and scripts/ (seed data, CI setup). Current oxfmt/oxlint configs were copied from a different project. Asked clarifying questions about scope, CI integration, and package manager.
 
 User answers:
+
 - Scope: All TypeScript files (k6/ + scripts/)
 - CI integration: Not added to CI (local dev tools only)
 - Package manager: pnpm
