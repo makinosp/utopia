@@ -98,3 +98,7 @@
       `.github/workflows/ci-phase1.yml`)
 - [x] CI Phase 2 Hardening — SKIPPED (user decision; no actionable items at this
       time)
+- [x] TypeScript Linter/Formatter Setup — COMPLETED (oxfmt.config.ts and
+      oxlint.config.ts customized for project; root package.json with pnpm added
+      for oxlint/oxfmt devDependencies; Build and Test docs updated to require
+      lint/format passing)

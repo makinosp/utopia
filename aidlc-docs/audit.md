@@ -928,3 +928,23 @@ No blocking ambiguities detected. Proceeding to generate requirements.md for UOW
 - Updated aidlc-state.md: Marked UOW-05 Build and Test as COMPLETED
 
 ---
+
+## Post-Completion Enhancement — TypeScript Linter/Formatter Setup
+
+**Timestamp**: 2026-07-07T00:00:00Z
+**User Input**: "Using AI-DLC, このプロジェクトのTypeScriptファイルに、LinterとFormatterしてoxlintとoxfmtを適用したい。現在存在するoxfmt.config.tsとoxlint.config.tsは別のプロジェクトで使っているものをそのままコピーしたので、これをカスタムして規則としたい。また、Build and TestフェーズでLinterとFormatterがパスすることを強制するよう、記述したい。質問があればいつでも聞いてください。"
+**AI Response**: Gathered project context — Rust/Axum backend with TypeScript files in k6/ (compatibility tests) and scripts/ (seed data, CI setup). Current oxfmt/oxlint configs were copied from a different project. Asked clarifying questions about scope, CI integration, and package manager.
+
+User answers:
+- Scope: All TypeScript files (k6/ + scripts/)
+- CI integration: Not added to CI (local dev tools only)
+- Package manager: pnpm
+
+Customized oxfmt.config.ts: removed irrelevant ignore patterns (prisma/generated), added k6-specific formatting overrides, adjusted JSON options, added scripts/seed override for double-quote preservation (seed files use double quotes habitually).
+
+Customized oxlint.config.ts: removed vitest plugin/rule, removed import plugin (requires build-time resolution not set up), adjusted ignore patterns for this project, added k6-specific overrides (k6 globals, console.warn exemption), relaxed explicit-function-return-type for seed scripts, adjusted rules for project-specific patterns.
+
+Created root package.json with pnpm as package manager, added oxlint and oxfmt as devDependencies with format/lint scripts.
+
+Updated build-and-test documentation (build-instructions.md and build-and-test-summary.md) to reference TypeScript linting and formatting as required local checks.
+**Context**: Post-completion enhancement — TypeScript tooling configuration and Build & Test documentation update.
