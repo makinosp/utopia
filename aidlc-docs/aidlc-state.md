@@ -34,6 +34,12 @@
 - [x] Requirements Analysis
 - [x] Workflow Planning
 
+### 🔵 INCEPTION PHASE (UOW-06 Auth/AuthZ — GoTrue Integration)
+
+- [x] Workspace Detection (resume from prior state)
+- [x] Requirements Analysis
+- [ ] Workflow Planning
+
 ### 🟢 CONSTRUCTION PHASE (per-unit loop)
 
 #### UOW-01 Core Foundation (COMPLETE)

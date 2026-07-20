@@ -1033,6 +1033,34 @@ User answers:
 - CI integration: Not added to CI (local dev tools only)
 - Package manager: pnpm
 
+---
+
+## INCEPTION — Requirements Analysis Completion (UOW-06 Auth/AuthZ, GoTrue)
+
+**Timestamp**: 2026-07-20T00:00:00Z **User Input**: (answers filled in
+auth-construction-questions.md — Q1=C GoTrue, Q2=C Layered, Q3=A
+Firefly-compatible, Q4=A Standard) then "回答を完了します。続行してください。"
+**AI Response**: Requirements Analysis complete for UOW-06. Created
+`aidlc-docs/inception/requirements/requirements-uow06-auth.md` with intent
+analysis, functional requirements (FR-01..07: external IdP delegation, JWT
+validation, Principal mapping, JIT user sync, layered coexistence, Firefly
+compatibility, JWKS caching) and non-functional requirements (NFR-SEC-01..06,
+NFR-REL-01, NFR-OBS-01, NFR-TST-01/02). Security Baseline compliance summary
+produced: no blocking findings (SEC-08 token validation and SEC-11 secure design
+are the key constraints; SEC-01/02/04/07 N/A for this unit). Updated
+aidlc-state.md Stage Progress with UOW-06 INCEPTION entries. **Context**:
+Requirements Analysis complete; awaiting user approval to proceed to Workflow
+Planning.
+
+---
+
+## INCEPTION — Requirements Approval Prompt (UOW-06)
+
+**Timestamp**: 2026-07-20T00:00:00Z **User Input**: (pending — approval prompt
+presented) **AI Response**: Presented completion message and approval prompt.
+Options offered: Request Changes / Approve & Continue → Workflow Planning.
+**Context**: Gate before Workflow Planning.
+
 Customized oxfmt.config.ts: removed irrelevant ignore patterns
 (prisma/generated), added k6-specific formatting overrides, adjusted JSON
 options, added scripts/seed override for double-quote preservation (seed files
