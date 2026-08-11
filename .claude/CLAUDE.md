@@ -1,1 +1,1 @@
-../.vendor/aidlc-workflows/aidlc-rules/aws-aidlc-rules/core-workflow.md
+../.vendor/aidlc-workflows/dist/claude/.claude/CLAUDE.md

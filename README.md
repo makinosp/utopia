@@ -24,8 +24,7 @@ See the full API contract in [openapi.yaml](openapi.yaml).
 ## Quick start
 
 Prerequisites: Docker Engine and Docker Compose (or a Rust toolchain for local
-builds). For exact toolchain and build instructions see
-[aidlc-docs/construction/build-and-test/build-instructions.md](aidlc-docs/construction/build-and-test/build-instructions.md).
+builds).
 
 Start with Docker Compose:
 
@@ -62,25 +61,28 @@ local development.
 
 ## Build & test
 
-Refer to
-[aidlc-docs/construction/build-and-test/build-instructions.md](aidlc-docs/construction/build-and-test/build-instructions.md)
-for recommended toolchain versions, CI checks, and detailed build and test
-commands.
+```bash
+# Build
+cargo build
+# Run tests
+cargo test
+# Lint
+cargo clippy -- -D warnings
+```
 
 ## Repository layout (high level)
 
-- src/ — application source code (server, handlers, core logic)
-- migrations/ — database migrations
-- docker/ — docker-compose and container helpers
-- aidlc-docs/ — architectural and planning documents
-- tests/ — integration and unit tests
-
-For a detailed code layout and design rationale see aidlc-docs/.
+- `src/` — application source code (server, handlers, core logic)
+- `migrations/` — database migrations
+- `docker/` — docker-compose and container helpers
+- `tests/` — integration and unit tests
+- `aidlc/` — AI-DLC workspace (design artifacts, decision records, and method memory)
 
 ## Documentation
 
-Design artifacts, plans, and implementation notes live in aidlc-docs/. Use those
-documents for architecture, NFRs, and construction plans.
+Architecture, NFRs, and construction plans are generated and maintained under
+`aidlc/` as part of the AI-DLC workflow. Run `/aidlc` to start or resume a
+workflow; see `AGENTS.md` for harness setup.
 
 ## License
 
