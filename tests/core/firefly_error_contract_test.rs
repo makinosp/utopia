@@ -1,7 +1,7 @@
 // Firefly Error Compatibility Tests
 //
 // These tests verify that error responses conform to the Firefly III API contract
-// defined in aidlc-docs/construction/core-foundation/functional-design/firefly-error-contract.md
+// (Firefly-III compatible envelope and error response structures).
 
 #[cfg(test)]
 mod firefly_error_contract_tests {
