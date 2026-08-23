@@ -1,0 +1,18 @@
+export const ignorePatterns: string[] = [
+  '**/.aidlc/**',
+  '**/.claude/**',
+  '**/.clinerules/**',
+  '**/.github/**',
+  '**/.kiro/**',
+  '**/.vendor/**',
+  '**/*.toml',
+  '**/*.yaml',
+  '**/*.yml',
+  '**/coverage/**',
+  '**/dist/**',
+  '**/k6-results/**',
+  '**/node_modules/**',
+  '**/target/**',
+  'AGENTS.md',
+  'aidlc/**',
+];
