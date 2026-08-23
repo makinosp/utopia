@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "fmt": "oxfmt --write scripts k6 oxlint.config.ts oxfmt.config.ts",
-    "fmt:check": "oxfmt --check scripts k6 oxlint.config.ts oxfmt.config.ts",
-    "lint": "oxlint scripts k6 oxlint.config.ts oxfmt.config.ts",
-    "lint:fix": "oxlint --fix scripts k6 oxlint.config.ts oxfmt.config.ts",
-    "lint-and-format": "oxfmt --check scripts k6 oxlint.config.ts oxfmt.config.ts && oxlint scripts k6 oxlint.config.ts oxfmt.config.ts"
+    "fmt": "oxfmt --write .",
+    "fmt:check": "oxfmt --check .",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "lint-and-format": "oxfmt --check . && oxlint ."
   },
   "devDependencies": {
     "oxfmt": "^0.44.0",
