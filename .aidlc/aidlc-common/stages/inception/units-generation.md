@@ -2,53 +2,49 @@
 slug: units-generation
 phase: inception
 execution: ALWAYS
-condition: Always executes when in scope. Produces the dependency DAG that Stage 2.8 Delivery Planning consumes for Bolt sequencing. In the compiled scope grid, 2.7 and 2.8 travel together — both EXECUTE or both SKIP per scope.
+condition: Always executes when in scope. Produces the dependency DAG that Stage 2.9 Delivery Planning consumes for Bolt sequencing. In the compiled scope grid, 2.7 (Units Generation) and 2.9 (Delivery Planning) travel together — both EXECUTE or both SKIP per scope.
 lead_agent: aidlc-architect-agent
 support_agents:
   - aidlc-delivery-agent
 mode: inline
 summary_confirmation: required
 reviewer: aidlc-architecture-reviewer-agent
+review_artifact: unit-of-work
 reviewer_max_iterations: 2
 review_class: advisory
 produces:
   - unit-of-work
   - unit-of-work-dependency
   - unit-of-work-story-map
+  - traceability
 consumes:
   - artifact: components
     required: true
-  - artifact: component-methods
-    required: true
-  - artifact: services
-    required: true
-  - artifact: component-dependency
-    required: true
   - artifact: decisions
-    required: true
+    required: false
   - artifact: requirements
     required: true
   - artifact: stories
     required: false
 requires_stage:
-  - application-design
+  - domain-design
 sensors:
   - required-sections
   - upstream-coverage
+  - traceability
 scopes:
   - enterprise
   - feature
   - mvp
+  - classic
   - workshop
-inputs: <record>/inception/application-design/ (all design artifacts), <record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced)
-outputs: unit-of-work.md, unit-of-work-dependency.md, unit-of-work-story-map.md (under this stage's record dir, engine-resolved)
+inputs: <record>/inception/domain-design/components.md, <record>/inception/requirements-analysis/requirements.md, <record>/inception/user-stories/stories.md (if produced)
+outputs: unit-of-work.md, unit-of-work-dependency.md, unit-of-work-story-map.md, traceability.json (under this stage's record dir, engine-resolved)
 ---
 
 # Units Generation
 
-MANDATORY: Follow stage-protocol.md for approval gates, question format, and completion messages.
-
-NOTE: **Stage 2.7 produces the dependency DAG (topology). Stage 2.8 chooses the economic path through it (Bolt sequence).** 2.7 MUST NOT recommend an implementation order or identify a critical path — those are 2.8's economic-sequencing decisions. This stage describes what can depend on what; 2.8 decides what to ship first and why.
+NOTE: **Stage 2.7 produces the dependency DAG (topology). Stage 2.9 Delivery Planning chooses the economic path through it (Bolt sequence).** 2.7 MUST NOT recommend an implementation order or identify a critical path — those are 2.9's economic-sequencing decisions. This stage describes what can depend on what; 2.9 decides what to ship first and why.
 
 ---
 
@@ -56,18 +52,14 @@ NOTE: **Stage 2.7 produces the dependency DAG (topology). Stage 2.8 chooses the 
 
 ### PART 1: Planning
 
-### Step 1: Load Agent Personas
+### Step 1: Load Prior Context
 
-Load aidlc-architect-agent persona from `agents/aidlc-architect-agent.md` and knowledge from `.aidlc/knowledge/aidlc-architect-agent/`.
-Load aidlc-delivery-agent persona from `agents/aidlc-delivery-agent.md` and knowledge from `.aidlc/knowledge/aidlc-delivery-agent/` for feasibility validation and prioritization.
-
-### Step 2: Load Prior Context
-
-- Read all artifacts from `<record>/inception/application-design/` (components.md, component-methods.md, services.md, component-dependency.md, decisions.md)
+- Read the component catalogue from `<record>/inception/domain-design/components.md` (the fenced `yaml` block plus the diagram, summary, and rationale)
+- Read the Architecture Decision Records from `<record>/inception/domain-design/decisions.md` (if produced) — the boundary/ownership ADRs constrain how components may be grouped into units (a decision to keep two components separately deployable, for instance, forbids bundling them into one unit)
 - Read `<record>/inception/requirements-analysis/requirements.md`
 - Read `<record>/inception/user-stories/stories.md` (if produced)
 
-### Step 3: Create Decomposition Plan with Questions
+### Step 2: Create Decomposition Plan with Questions
 
 Create `<record>/inception/units-generation/units-generation-questions.md` with questions using [Answer]: tag format:
 - Unit boundary strategy (by service, by feature, by domain, by deployment target)
@@ -76,16 +68,16 @@ Create `<record>/inception/units-generation/units-generation-questions.md` with 
 - Integration points and contracts between units (APIs, shared data, events)
 - Deployment model (monolithic deploy, independent deploy, hybrid)
 
-NOTE: Do NOT ask about implementation order priorities (value-first, risk-first, walking-skeleton-first). Those are economic-sequencing decisions that belong to Stage 2.8 Delivery Planning.
+NOTE: Do NOT ask about implementation order priorities (value-first, risk-first, walking-skeleton-first). Those are economic-sequencing decisions that belong to Stage 2.9 Delivery Planning.
 
-### Step 4: Collect and Analyze Answers
+### Step 3: Collect and Analyze Answers
 
 Collect answers following stage-protocol.md §3 question flow (offer interaction mode choice, collect answers, write back to file).
 - MANDATORY ambiguity analysis: scan for vague language, contradictions, missing details
 - Create follow-up questions if ANY ambiguity found
 - Resolve all ambiguities before proceeding
 
-### Step 5: Get Plan Approval
+### Step 4: Get Plan Approval
 
 Present the decomposition plan to the user as a structured question:
 - Summarize the approach: unit boundary strategy, estimated unit count, dependency structure, and the proposed kind per unit (service/spec/ui/packaging/library) so the human confirms the design-artifact scope each unit will carry into Construction
@@ -95,12 +87,13 @@ Present the decomposition plan to the user as a structured question:
 
 ### PART 2: Generation
 
-### Step 6: Execute Plan — Generate Unit Artifacts
+### Step 5: Execute Plan — Generate Unit Artifacts
 
-Based on the approved plan, generate 3 artifacts in `<record>/inception/units-generation/`:
+Based on the approved plan, generate 4 artifacts in `<record>/inception/units-generation/` (the three Unit artifacts below plus `traceability.json`, whose contents are specified at the end of this step):
 
 **unit-of-work.md:**
 - Unit definitions (name, description, boundaries)
+- A stable short ID `U{n}` for every Unit and its construction directory name `u{n}-{description}`. Include both in a table (`Unit ID` and `Directory`) so downstream tools can join story-map IDs to filesystem paths.
 - Unit responsibilities (what each unit owns and delivers)
 - Deployment model per unit (standalone, shared, embedded)
 - Relative complexity estimate per unit (S/M/L/XL)
@@ -125,21 +118,37 @@ units:
     depends_on: [<unit-name>]
 ```
 
-NOTE: This artifact describes topology only. It does NOT pick a single "recommended build order" or identify a critical path — those are economic decisions made in 2.8 using this DAG as input.
+NOTE: This artifact describes topology only. It does NOT pick a single "recommended build order" or identify a critical path — those are economic decisions made in 2.9 (Delivery Planning) using this DAG as input.
 
 **unit-of-work-story-map.md:**
-- Each user story mapped to its implementing unit(s)
+- Each user story mapped by `USx.y` ID to its implementing Unit `U{n}` ID and directory name
 - Stories that span multiple units (cross-cutting concerns)
 - Story implementation order within each unit
 - Coverage verification: every story assigned, every unit has stories
 
-### Step 7: Completion Handoff
+Create `<record>/inception/units-generation/traceability.json`. When
+`stories.md` exists, enumerate every `USx.y`; otherwise enumerate every `FR`.
+Each `OK` target is one Unit ID or construction directory that also appears on
+the story's row in `unit-of-work-story-map.md`:
+
+```json
+{
+  "stage": "units-generation",
+  "upstream_ids": ["US1.1", "US1.2"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "U1" },
+    { "id": "US1.2", "status": "GAP" }
+  ]
+}
+```
+
+### Step 6: Completion Handoff
 
 Hand completion to `stage-protocol.md` via
 `bun .aidlc/tools/aidlc-orchestrate.ts report --stage units-generation --result <outcome>`.
 That `report` call owns every lifecycle transition and advancement; never perform one in prose, and never narrate this bookkeeping to the user.
 
-### Step 8: Present Completion & Request Approval
+### Step 7: Present Completion & Request Approval
 
 Use stage-protocol.md completion template with completion emoji: :wrench:
 - Summary of units defined (with each unit's kind), dependencies mapped, stories assigned
@@ -150,38 +159,20 @@ Use stage-protocol.md completion template with completion emoji: :wrench:
 
 This stage's outputs are markdown artefacts under `<record>/inception/units-generation/`.
 
-The imported sensors check those outputs:
+Imports: `required-sections`, `upstream-coverage`, `traceability`.
 
-- **`required-sections`** verifies the output contains the registry default (≥2 H2 headings), and — for `unit-of-work-dependency.md` specifically — that the required fenced `yaml` edge block is present, well-formed, and cycle-free. Failure mode: missing headings or an absent/malformed/cyclic edge block emit `SENSOR_FAILED` with detail at `<record>/.aidlc-sensors/<stage-slug>/required-sections-<iso>.md`.
-- **`upstream-coverage`** verifies the output prose references each artefact declared in this stage's `consumes:` frontmatter. Failure mode: missing upstream references emit `SENSOR_FAILED` listing each unreferenced artefact (this stage consumes `components`, `component-methods`, `services`, `component-dependency`, `decisions`, `requirements`, `stories`).
+Upstream targets: `components`, `decisions`, `requirements`, `stories`.
+
+For `unit-of-work-dependency.md`, `required-sections` also requires a
+well-formed, cycle-free fenced `yaml` edge block. `traceability` owns
+`traceability.json`, derives the Unit set, and verifies every story maps to
+its declared target Unit.
 
 ## Learn
 
-While running this stage, maintain a running log in
-`<record>/<phase>/<stage>/memory.md` (create on stage start if absent).
-Append entries under four standard headings:
-
-- **Interpretations** — choices made where the stage prose was ambiguous
-- **Deviations** — places you intentionally departed from the stage prose, and why
-- **Tradeoffs** — alternatives considered and why you picked what you did
-- **Open questions** — anything to confirm before next run, or uncertain context
-
-Format each entry with an ISO 8601 timestamp:
-`- 2026-05-20T10:14:32Z — <summary>; <context>`
-
-Before the approval gate, read memory.md and surface candidates as a
-structured question. For each entry the user keeps, write to the appropriate
-harness destination per `stage-protocol.md` §13 — never to this stage file:
-
-- Prescriptive rule → a practice line under the routed heading in
-  `aidlc/spaces/<active-space>/memory/project.md` (default) or `team.md` (promoted)
-- Verification check → new manifest at `.aidlc/sensors/aidlc-<id>.md`
-  (capability descriptor only — no `applies_to`); add the new id to
-  the relevant stage's `sensors: [...]` frontmatter list to wire it
-
-Even when nothing surfaces, still ask the mandatory "Anything to add for next time?" question from stage-protocol.md section 13. Do not infer "Nothing to add." Only after the human answers that question may you proceed to the gate. The memory.md
-file stays in the artefact directory as part of the stage's permanent record.
-
-Stage files are immutable framework artefacts — the ritual writes into the
-harness, not into this file. Next time this stage runs, the new rules and
-sensors load automatically.
+Follow stage-protocol.md §13: maintain `<record>/<phase>/<stage>/memory.md`
+under the four standard headings while working; before the approval gate,
+surface candidates with `aidlc-learnings.ts`;
+still ask the mandatory "Anything to add for next time?" question, and persist confirmed selections
+with the tool. The memory file stays in the artefact directory, and the stage
+file remains immutable.

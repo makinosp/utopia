@@ -6,22 +6,23 @@
 // whose output cascades downstream (architect, developer, product, ...): it
 // inherits the session's own model and effort so the user's ceiling is never
 // silently capped. `balanced` marks reviewer-shaped work (novel input judged
-// against explicit criteria): a mid-size model, session effort. `templated`
+// against explicit criteria): a mid-size model at reduced effort. `templated`
 // marks dominantly pattern-following output whose methodology already lives in
-// knowledge (delivery plans, CI/CD config, runbooks): a mid-size model at a
-// deliberately reduced effort - the one place the framework steps DOWN on its
-// own. Tiers only ever step down, never up, and only for templated work; the
-// names describe the WORK, not the dial, so a reader can classify a new agent
-// without knowing today's model lineup.
+// knowledge (delivery plans, CI/CD config, runbooks). It currently shares the
+// same mid-size-model, reduced-effort projection as `balanced`. Both tiers step
+// down, never up; their distinct names describe the WORK and let either policy
+// be retuned independently without reclassifying agents.
 //
 // Projection targets (see TIER_PROJECTIONS):
 //   - Claude Code   agent .md frontmatter: `model:` and optional `effort:`.
 //                   An OMITTED key inherits the session value, and a pinned
 //                   `effort:` overrides the session in both directions - a pin
 //                   is a cap, not a floor. So `judgment` writes `model:
-//                   inherit` and NO effort line; `balanced` writes `model:
-//                   sonnet` and NO effort line; only `templated` pins
-//                   `effort: medium`.
+//                   inherit` and NO effort line; `balanced` and `templated`
+//                   both write `model: sonnet` and pin `effort: medium`.
+//                   Those two tiers project IDENTICALLY in every harness
+//                   today - see the note on TIER_PROJECTIONS.balanced - so do
+//                   not read two tier names as two distinct projections.
 //   - Codex CLI     agent role .toml: `model` and `model_reasoning_effort`.
 //                   Omitted keys fall back to the shipped .codex/config.toml
 //                   session defaults (live-verified on codex-cli 0.139.0 and
@@ -102,6 +103,13 @@ export type TierProjection = {
    *  Agents inherit the session model (BYOK env on the CLI, the model picker
    *  on the IDE); the type makes a model leak structurally impossible. */
   copilot: { model: null };
+  /** Cursor agent .md frontmatter: `model:` (Cursor model id, e.g.
+   *  "claude-opus-5-medium"). Model-only BY DESIGN, like kiro: Cursor has no
+   *  effort key in agent frontmatter (effort rides the model id suffix). All
+   *  tiers ship null — model availability is Cursor-plan-dependent (Free
+   *  accounts reject every named model), so a pinned id would hard-fail
+   *  installs on lower plans; agents inherit the session model instead. */
+  cursor: { model: string | null };
 };
 
 export type Harness = keyof TierProjection;
@@ -117,6 +125,7 @@ export const TIER_PROJECTIONS: Record<Tier, TierProjection> = {
     kiro: { model: null },
     opencode: { model: null, variant: null },
     copilot: { model: null },
+    cursor: { model: null },
   },
   balanced: {
     // Effort pinned to medium (was: inherit the session effort). Balanced is
@@ -125,19 +134,21 @@ export const TIER_PROJECTIONS: Record<Tier, TierProjection> = {
     // of an xhigh-inheriting one with no verdict/finding quality loss. A
     // session pinned to xhigh was silently doubling every review's cost.
     claude: { model: "sonnet", effort: "medium" },
-    codex: { model: "openai.gpt-5.4", effort: "medium" },
+    codex: { model: "openai.gpt-5.6-terra", effort: "medium" },
+    cursor: { model: null },
     kiro: { model: null },
     opencode: { model: "amazon-bedrock/global.anthropic.claude-sonnet-4-6", variant: "medium" },
     copilot: { model: null },
   },
   templated: {
-    // The one deliberate downgrade: a smaller model at reduced effort for
-    // pattern-following output.
+    // The pattern-following tier. It currently shares balanced's smaller-model,
+    // reduced-effort projection, but remains distinct so either can be retuned.
     claude: { model: "sonnet", effort: "medium" },
-    codex: { model: "openai.gpt-5.4", effort: "medium" },
+    codex: { model: "openai.gpt-5.6-terra", effort: "medium" },
     kiro: { model: null },
     opencode: { model: "amazon-bedrock/global.anthropic.claude-sonnet-4-6", variant: "medium" },
     copilot: { model: null },
+    cursor: { model: null },
   },
 };
 

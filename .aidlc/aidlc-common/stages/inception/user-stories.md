@@ -11,12 +11,14 @@ support_agents:
 mode: mob
 summary_confirmation: required
 reviewer: aidlc-product-lead-agent
+review_artifact: stories
 reviewer_max_iterations: 2
 review_class: advisory
 produces:
   - stories
   - personas
   - user-stories-assessment
+  - traceability
 consumes:
   - artifact: requirements
     required: true
@@ -33,18 +35,18 @@ requires_stage:
 sensors:
   - required-sections
   - upstream-coverage
+  - traceability
 scopes:
   - enterprise
   - feature
   - mvp
+  - classic
   - workshop
 inputs: <record>/inception/requirements-analysis/requirements.md, RE artifacts (if brownfield)
-outputs: stories.md, personas.md, user-stories-assessment.md (under this stage's record dir, engine-resolved)
+outputs: stories.md, personas.md, user-stories-assessment.md, traceability.json (under this stage's record dir, engine-resolved)
 ---
 
 # User Stories
-
-MANDATORY: Follow stage-protocol.md for approval gates, question format, and completion messages.
 
 ## Steps
 
@@ -54,7 +56,7 @@ Read every path in `directive.inline_context_paths` per the stage protocol. For
 this mob the roster contains the aidlc-product-agent persona and its shared/role
 knowledge only; the product manager owns the inline draft and integration work.
 
-This stage runs `mode: mob` (stage-protocol.md §5 "Multi-agent stages"): the support agents (aidlc-design-agent for user experience, aidlc-developer-agent for implementability, aidlc-quality-agent for testability) are NOT voices to adopt — they are dispatched as independent participants during PART 2. Do not load their personas into your own context.
+This stage runs `mode: mob` (stage-protocol-ensemble.md §5 "Multi-agent stages"): the support agents (aidlc-design-agent for user experience, aidlc-developer-agent for implementability, aidlc-quality-agent for testability) are NOT voices to adopt — they are dispatched as independent participants during PART 2. Do not load their personas into your own context.
 
 ### Step 2: Validate User Stories Are Needed
 
@@ -117,7 +119,7 @@ If the user interjects with feedback before generation completes, treat it as a 
 
 This is the mob-elaboration ritual: the Product Manager (lead) owns the
 draft, Developers and QA (and Design) collaborate as independent
-participants, and the Product Leader reviews afterwards (§12a).
+participants, and the Product Leader reviews afterwards (`stage-protocol-reviewer.md` §12a).
 
 **Round 0 — lead drafts.** As the lead, based on the approved plan, draft:
 
@@ -126,13 +128,13 @@ participants, and the Product Leader reviews afterwards (§12a).
 - Persona relationships and priority ranking
 
 **`<record>/inception/user-stories/stories.md`:**
-- User stories in standard format: "As a [persona], I want [goal], so that [benefit]"
-- Acceptance criteria for each story
+- User stories in standard format: "As a [persona], I want [goal], so that [benefit]". Give each story a stable `US{group}.{seq}` ID (for example `US1.1`).
+- Acceptance criteria for each story. Give each criterion a three-segment `AC{story-group}.{story-seq}.{criterion-seq}` ID (for example `AC1.1.1`).
 - Story priority (Must Have / Should Have / Could Have / Won't Have)
 - Story dependencies and relationships
 - INVEST compliance notes
 
-**Round 1 — dispatch the mob.** Per stage-protocol.md §5 `mode: mob`,
+**Round 1 — dispatch the mob.** Per stage-protocol-ensemble.md §5 `mode: mob`,
 dispatch all three support agents in parallel against the draft (artifacts
 by path: the two draft artifacts, the Q&A file, requirements.md; rules as the
 accumulated steering bundle), mutually blind. Each WRITES its contribution file at
@@ -142,7 +144,7 @@ persona fidelity, developer on implementability and story sizing, quality on
 testability of the acceptance criteria.
 
 **Integrate and triage.** As the lead, fold the contributions into the two
-artifacts, then triage unresolved objections per §5: a judgment call (both
+artifacts, then triage unresolved objections per stage-protocol-ensemble.md §5: a judgment call (both
 positions legitimate) goes to the user NOW as a structured question (add it
 to the questions file first, blank `[Answer]:` tag); a knowledge dispute
 goes to **round 2** — re-dispatch only the objecting agent(s) with the
@@ -150,6 +152,24 @@ revised draft and the other participants' positions (they update their own
 contribution files). Maintained dissent is quoted verbatim in the Step 10
 completion summary. The three contribution files are this stage's ensemble
 evidence — the engine refuses approval while any is missing.
+
+**Write element-level traceability.** Create
+`<record>/inception/user-stories/traceability.json`. Enumerate every `FR` and
+`NFR` ID from `requirements.md` in `upstream_ids`, with one `coverage` row per
+ID. `OK` targets must name one or more existing `USx.y` IDs. Use `Deferred`
+only with a named downstream stage and `N/A` only with a justification:
+
+```json
+{
+  "stage": "user-stories",
+  "upstream_ids": ["FR1", "FR2", "NFR1"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "US1.1, US1.2" },
+    { "id": "NFR1", "status": "Deferred", "target": "nfr-requirements" },
+    { "id": "FR2", "status": "GAP" }
+  ]
+}
+```
 
 ### Step 9: Open the Approval Gate
 
@@ -172,7 +192,8 @@ Use stage-protocol.md completion template with completion emoji: :books:
 
 STOP for the human response. Report **Approve** with
 `--result approved --user-input "<exact choice>"`; report
-**Request Changes** with `--result rejected --user-input "<feedback>"`, run the
+**Request Changes** with `--result rejected --user-input "Request Changes"
+--reason "<feedback>"`, run the
 revision loop, and report `--result revised` before re-presenting. The engine
 owns every lifecycle transition and advancement.
 
@@ -180,38 +201,18 @@ owns every lifecycle transition and advancement.
 
 This stage's outputs are markdown artefacts under `<record>/inception/user-stories/`.
 
-The imported sensors check those outputs:
+Imports: `required-sections`, `upstream-coverage`, `traceability`.
 
-- **`required-sections`** verifies the output contains the registry default (≥2 H2 headings). Failure mode: missing headings emit `SENSOR_FAILED` with detail at `<record>/.aidlc-sensors/<stage-slug>/required-sections-<iso>.md`.
-- **`upstream-coverage`** verifies the output prose references each artefact declared in this stage's `consumes:` frontmatter. Failure mode: missing upstream references emit `SENSOR_FAILED` listing each unreferenced artefact (this stage consumes `requirements`, `team-practices`).
+Upstream targets: `requirements`, `business-overview`, `component-inventory`, `team-practices`.
+
+`traceability` owns `traceability.json`, verifies every requirement is
+declared and covered, and checks that each `OK` target exists in `stories.md`.
 
 ## Learn
 
-While running this stage, maintain a running log in
-`<record>/<phase>/<stage>/memory.md` (create on stage start if absent).
-Append entries under four standard headings:
-
-- **Interpretations** — choices made where the stage prose was ambiguous
-- **Deviations** — places you intentionally departed from the stage prose, and why
-- **Tradeoffs** — alternatives considered and why you picked what you did
-- **Open questions** — anything to confirm before next run, or uncertain context
-
-Format each entry with an ISO 8601 timestamp:
-`- 2026-05-20T10:14:32Z — <summary>; <context>`
-
-Before the approval gate, read memory.md and surface candidates as a
-structured question. For each entry the user keeps, write to the appropriate
-harness destination per `stage-protocol.md` §13 — never to this stage file:
-
-- Prescriptive rule → a practice line under the routed heading in
-  `aidlc/spaces/<active-space>/memory/project.md` (default) or `team.md` (promoted)
-- Verification check → new manifest at `.aidlc/sensors/aidlc-<id>.md`
-  (capability descriptor only — no `applies_to`); add the new id to
-  the relevant stage's `sensors: [...]` frontmatter list to wire it
-
-Even when nothing surfaces, still ask the mandatory "Anything to add for next time?" question from stage-protocol.md section 13. Do not infer "Nothing to add." Only after the human answers that question may you proceed to the gate. The memory.md
-file stays in the artefact directory as part of the stage's permanent record.
-
-Stage files are immutable framework artefacts — the ritual writes into the
-harness, not into this file. Next time this stage runs, the new rules and
-sensors load automatically.
+Follow stage-protocol.md §13: maintain `<record>/<phase>/<stage>/memory.md`
+under the four standard headings while working; before the approval gate,
+surface candidates with `aidlc-learnings.ts`;
+still ask the mandatory "Anything to add for next time?" question, and persist confirmed selections
+with the tool. The memory file stays in the artefact directory, and the stage
+file remains immutable.

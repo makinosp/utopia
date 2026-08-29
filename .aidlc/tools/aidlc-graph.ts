@@ -57,7 +57,6 @@ import {
   _resetHarnessDataForTests,
   _resetScopeMappingForTests,
   _resetStageGraphForTests,
-  activeSpace,
   auditLockOwnedByProcess,
   type AgentMetadata,
   errorMessage,
@@ -65,6 +64,7 @@ import {
   loadAgents,
   loadScopeMapping,
   loadScopeMetadata,
+  loadScopeMetadataAll,
   harnessDir,
   PHASES,
   type Phase,
@@ -78,6 +78,7 @@ import {
   parseStageFrontmatter,
   planFilePath,
   resolveProjectDir,
+  resolveWorkflowSelection,
   type ScopeDefinition,
   type StageEntry,
   stageEnabledBySelection,
@@ -120,13 +121,15 @@ export interface RuleResolution {
 // Per-sensor resolution row baked into each stage's sensors_applicable.
 // Pull authoring: the stage's frontmatter `sensors: [<id>]` declares the
 // import; the resolver looks the manifest up by id and copies its
-// capability filter (matches) verbatim. matches is omitted when the
-// manifest declares no path filter (e.g., required-sections,
-// upstream-coverage). The PostToolUse hook reads the snapshotted matches
-// off the graph node — never re-opens the manifest at fire time.
+// dispatch policy and capability metadata verbatim. matches is omitted when
+// the manifest declares no path filter. Runtime dispatchers read this
+// snapshotted binding off the graph node — never re-open the manifest.
 export interface SensorResolution {
   id: string;
   path: string;
+  fire_on: "write" | "gate";
+  default_severity: "advisory" | "blocking";
+  category?: string;
   matches?: string;
 }
 
@@ -185,6 +188,8 @@ export interface GraphStage extends StageEntry {
   // Absent when no review step is configured. Parsed from stage frontmatter
   // `reviewer:` field and carried through to the run-stage directive.
   reviewer?: string;
+  // Required Markdown output that owns the appended reviewer section.
+  review_artifact?: string;
   // reviewer_max_iterations — review cycle cap before escalating to human.
   // Defaults to 2 when reviewer is present.
   reviewer_max_iterations?: number;
@@ -207,6 +212,13 @@ export interface ScopeValidation {
   // counts). The composer copies this into its proposal verbatim so the gate the
   // human sees leads with numbers the validator computed, not an LLM recount.
   summary?: ScopeCostSummary;
+  // Graph/plugin-authored stock scopes ranked by grid distance from the
+  // validated proposal; composer-authored entries are excluded. A front/report
+  // matched-vs-custom verdict routes on nearest_stock[0].diff (match when <= 2
+  // and depth is compatible), so the routing is the final validator's number,
+  // not an LLM recount or the earlier mechanical screen. In-flight treats the
+  // ranking as advisory and preserves the running plan.
+  nearest_stock?: Array<{ scope: string; diff: number; differs: string[] }>;
 }
 
 // --- Module-local state ---
@@ -323,7 +335,9 @@ function memoryDisplayPath(rel: string): string {
  *  `memorySegmentsForSpace`. (The TPL templates dir is this + "templates"; see
  *  `memoryTemplatesDir`.) */
 export function memoryDirFor(projectDir: string, space?: string): string {
-  return join(projectDir, ...memorySegmentsForSpace(space ?? activeSpace(projectDir)));
+  const resolvedSpace =
+    space ?? resolveWorkflowSelection(projectDir).space;
+  return join(projectDir, ...memorySegmentsForSpace(resolvedSpace));
 }
 
 /** The TPL template-override source-of-truth dir for a workspace:
@@ -335,7 +349,9 @@ export function memoryDirFor(projectDir: string, space?: string): string {
  *  gets teamB's templates. Kept here (not hardcoded in the dispatcher) so it
  *  stays byte-aligned with where the packager emits and the resolver reads. */
 export function memoryTemplatesDir(projectDir: string, space?: string): string {
-  return join(projectDir, ...memorySegmentsForSpace(space ?? activeSpace(projectDir)), "templates");
+  const resolvedSpace =
+    space ?? resolveWorkflowSelection(projectDir).space;
+  return join(projectDir, ...memorySegmentsForSpace(resolvedSpace), "templates");
 }
 
 /** The FRAMEWORK-DEFAULT templates dir — the read-only, engine-shipped middle
@@ -460,6 +476,7 @@ const FIELD_ORDER = [
   "sensors",
   "scopes",
   "reviewer",
+  "review_artifact",
   "reviewer_max_iterations",
   "review_class",
   "summary_confirmation",
@@ -772,7 +789,15 @@ export function resolveSensorsForStage(
           `Known ids: ${known}`,
       );
     }
-    const entry: SensorResolution = { id: sensor.id, path: sensor.path };
+    const entry: SensorResolution = {
+      id: sensor.id,
+      path: sensor.path,
+      fire_on: sensor.manifest.fire_on,
+      default_severity: sensor.manifest.default_severity,
+    };
+    if (sensor.manifest.category !== undefined) {
+      entry.category = sensor.manifest.category;
+    }
     if (sensor.manifest.matches !== undefined) {
       entry.matches = sensor.manifest.matches;
     }
@@ -819,6 +844,31 @@ export function consumersOf(artifact: string): GraphStage[] {
   return loadGraph().filter((s) =>
     (s.consumes ?? []).some((c) => c.artifact === artifact)
   );
+}
+
+/** Consumed artifacts with more than one loaded producer. Runtime resolution
+ *  selects the first producer by graph load order, so callers can surface this
+ *  ambiguous configuration before that implicit choice affects a workflow. */
+export function consumedArtifactProducerCollisions(): {
+  artifact: string;
+  producers: string[];
+  consumers: string[];
+}[] {
+  const consumedArtifacts = [
+    ...new Set(
+      loadGraph().flatMap((stage) =>
+        (stage.consumes ?? []).map((consume) => consume.artifact)
+      )
+    ),
+  ].sort();
+
+  return consumedArtifacts
+    .map((artifact) => ({
+      artifact,
+      producers: producersOf(artifact).map((stage) => stage.slug),
+      consumers: consumersOf(artifact).map((stage) => stage.slug).sort(),
+    }))
+    .filter(({ producers }) => producers.length >= 2);
 }
 
 /** TPL — the subset of a stage's `produces[]` eligible for a template
@@ -1000,11 +1050,42 @@ export function subgraphForScope(scope: string): GraphStage[] {
     .sort((a, b) => numericStageOrder(a.number, b.number));
 }
 
+/** Rank every graph/plugin-authored stock scope by grid distance from the given
+ *  EXECUTE/SKIP grid: `{scope, diff, differs}` sorted by diff then name.
+ *  Composer-authored entries appended to scope-grid.json are deliberately
+ *  excluded. Distance covers the union of proposal and stock keys, so missing
+ *  proposal stages and unknown extras are differences rather than invisible
+ *  overlap. Shared by `ars` (against the complete mechanical screen grid) and
+ *  `validate-grid` (against the composer's proposal); only the latter is a
+ *  front/report stock-match authority. */
+export function nearestStockScopes(
+  grid: Record<string, "EXECUTE" | "SKIP">
+): Array<{ scope: string; diff: number; differs: string[] }> {
+  const stockScopeNames = stageDeclaredScopeNames(loadGraph());
+  return Object.entries(loadScopeGrid())
+    // Composer-authored scopes are appended only to scope-grid.json; no stage
+    // declares them. They remain runnable but must never become stock-match
+    // candidates for an unrelated later composition.
+    .filter(([scope]) => stockScopeNames.has(scope))
+    .map(([scope, def]) => {
+      const differs: string[] = [];
+      const slugs = new Set([
+        ...Object.keys(def.stages),
+        ...Object.keys(grid),
+      ]);
+      for (const slug of slugs) {
+        if (grid[slug] !== def.stages[slug]) differs.push(slug);
+      }
+      return { scope, diff: differs.length, differs };
+    })
+    .sort((a, b) => a.diff - b.diff || a.scope.localeCompare(b.scope));
+}
+
 /** Resolve a scope's plan: the EXECUTE/SKIP slice over the full graph in
  *  numeric order, shaped `{slug, phase, action}` — byte-identical to
  *  lib.ts's stagesInScope() / the legacy scope-mapping-derived plan. The
  *  `aidlc-graph resolve` subcommand writes this to .aidlc-plan.json. The
- *  parity test asserts this matches the legacy plan across all 9 scopes. */
+ *  parity test asserts this matches the legacy plan across all 11 scopes. */
 export function resolvePlanForScope(
   scope: string
 ): Array<{ slug: string; phase: string; action: "EXECUTE" | "SKIP" }> {
@@ -1105,6 +1186,15 @@ export function validateGrid(
       );
     }
   }
+  const missingSlugs = graph
+    .map((stage) => stage.slug)
+    .filter((slug) => !(slug in grid));
+  if (missingSlugs.length > 0) {
+    errors.push(
+      `Grid is missing ${missingSlugs.length} compiled stage entr${missingSlugs.length === 1 ? "y" : "ies"}: ` +
+        `${missingSlugs.join(", ")}. Every compiled stage must be explicitly EXECUTE or SKIP.`,
+    );
+  }
 
   const onPath = new Set(
     Object.entries(grid)
@@ -1159,7 +1249,14 @@ export function validateGrid(
   const summary = gridCostSummary(
     grid as Record<string, "EXECUTE" | "SKIP">,
   );
-  return { valid: errors.length === 0, errors, advisories, summary };
+  // Distance to each stock scope travels with the validation for the same
+  // reason as summary: the match decision must ride the validator's numbers.
+  // Unknown and missing slugs already errored above; the ranking still counts
+  // them so an invalid partial grid can never look like an exact stock match.
+  const nearest_stock = nearestStockScopes(
+    grid as Record<string, "EXECUTE" | "SKIP">,
+  );
+  return { valid: errors.length === 0, errors, advisories, summary, nearest_stock };
 }
 
 /** Check proposed (granted-at-the-gate) keywords against the keywords the
@@ -1371,8 +1468,14 @@ export function canonicalScopeGridJson(grid: ScopeGrid): string {
  *  all-SKIP, an emptied plan with no diagnostic. Any on-disk entry whose
  *  scope name the transpose does not produce survives the recompile; keys
  *  re-sort so the canonical emitter stays deterministic. Unparseable or
- *  malformed on-disk grids contribute nothing (fresh wins). */
-export function mergeComposedScopes(fresh: ScopeGrid, onDiskJson: string | null): ScopeGrid {
+ *  malformed on-disk grids contribute nothing (fresh wins). When
+ *  `preserveNames` is supplied, an orphan grid column with no matching scope
+ *  identity file is dropped rather than mistaken for a composed scope. */
+export function mergeComposedScopes(
+  fresh: ScopeGrid,
+  onDiskJson: string | null,
+  preserveNames?: ReadonlySet<string>,
+): ScopeGrid {
   if (!onDiskJson) return fresh;
   let onDisk: unknown;
   try {
@@ -1384,6 +1487,7 @@ export function mergeComposedScopes(fresh: ScopeGrid, onDiskJson: string | null)
   const merged: ScopeGrid = { ...fresh };
   for (const [name, entry] of Object.entries(onDisk as Record<string, unknown>)) {
     if (name in merged) continue;
+    if (preserveNames !== undefined && !preserveNames.has(name)) continue;
     if (
       typeof entry === "object" && entry !== null && !Array.isArray(entry) &&
       typeof (entry as { stages?: unknown }).stages === "object"
@@ -1612,6 +1716,9 @@ export function compileStageGraph(): {
   const newByPrefix = new Map<number, NewStageSeed[]>();
   // Track slug-to-first-file so duplicate-slug errors name both files.
   const slugToFile = new Map<string, string>();
+  type StageDeclaration = { file: string; slug: string };
+  const artifactProducers = new Map<string, StageDeclaration[]>();
+  const artifactConsumers = new Map<string, StageDeclaration[]>();
 
   // Known agent slugs (the `name:` field of each .claude/agents/*.md), passed
   // to validateStageFrontmatter so a stage referencing a lead_agent or
@@ -1694,6 +1801,26 @@ export function compileStageGraph(): {
       }
       slugToFile.set(slug, filePath);
 
+      const declaration = { file: filePath, slug };
+      // Match producersOf(): required and optional outputs share one artifact
+      // producer namespace. Set semantics avoid counting one stage twice if an
+      // author repeats a name across both lists.
+      for (const artifact of new Set([
+        ...(validation.data.produces ?? []),
+        ...(validation.data.optional_produces ?? []),
+      ])) {
+        const producers = artifactProducers.get(artifact) ?? [];
+        producers.push(declaration);
+        artifactProducers.set(artifact, producers);
+      }
+      for (const artifact of new Set(
+        (validation.data.consumes ?? []).map((consume) => consume.artifact),
+      )) {
+        const consumers = artifactConsumers.get(artifact) ?? [];
+        consumers.push(declaration);
+        artifactConsumers.set(artifact, consumers);
+      }
+
       // Existing slug -> keep its pinned number + name (the "computed once,
       // stable thereafter" contract; a pinned row missing only its name
       // seeds the name inline). New slug -> DEFER numbering to the per-phase
@@ -1722,6 +1849,24 @@ export function compileStageGraph(): {
           newByPrefix.set(prefix, [{ data: validation.data, phase, prefix, name }]);
       }
     }
+  }
+
+  for (const [artifact, producers] of artifactProducers) {
+    if (producers.length < 2) continue;
+    const consumer = artifactConsumers.get(artifact)?.[0];
+    if (!consumer) continue;
+
+    // Shared artifact names are legal when unconsumed: traceability is
+    // produced by eight stages and consumed by none, so only consumed names
+    // require a unique producer.
+    const producerList = producers
+      .map(({ file, slug }) => `${file} (stage "${slug}")`)
+      .join(", ");
+    throw new Error(
+      `Duplicate producers for consumed artifact "${artifact}" in ${producerList} — ` +
+        `consumed by stage "${consumer.slug}" in ${consumer.file}. ` +
+        `Rename one produced artifact or update the consumer.`
+    );
   }
 
   // Per-phase topological seed for NEW slugs. Numbers are assigned by the
@@ -1805,8 +1950,9 @@ export function compileStageGraph(): {
   }
 
   // Resolve per-stage sensor imports. Pull authoring: each stage's
-  // sensors[] list is looked up against the manifest registry; matches
-  // is copied verbatim into the resolved entry. Unknown ids throw —
+  // sensors[] list is looked up against the manifest registry; dispatch
+  // policy, severity, category, and matches are copied into the resolved
+  // entry. Unknown ids throw —
   // authoring errors fail loud at compile, not at fire time.
   const sensorsById = loadSensors();
   for (const stage of stages) {
@@ -1877,7 +2023,12 @@ export function compileStageGraph(): {
     /* first compile: no grid on disk yet */
   }
   const selectedScopeNames = enabledScopeNames();
-  const composedNames = composedScopeNames(onDiskGrid, stockScopeNames);
+  const installedScopeNames = new Set(Object.keys(loadScopeMetadataAll()));
+  const composedNames = new Set(
+    [...composedScopeNames(onDiskGrid, stockScopeNames)].filter((name) =>
+      installedScopeNames.has(name),
+    ),
+  );
   const seededScopeNames =
     selectedScopeNames === null
       ? undefined
@@ -1892,6 +2043,7 @@ export function compileStageGraph(): {
             seededScopeNames,
           ),
           onDiskGrid,
+          composedNames,
         ),
         selectedScopeNames,
         composedNames,
@@ -1976,6 +2128,7 @@ function buildGraphStage(
   }
   if (parsed.reviewer !== undefined) {
     stage.reviewer = parsed.reviewer;
+    stage.review_artifact = parsed.review_artifact;
     // Default the cap to 2 when a reviewer is declared but no explicit cap is
     // set. The parser (V1) now returns a real number and validateStageFrontmatter
     // (V2) rejects a non-positive-integer cap upstream, so this should always
@@ -2448,16 +2601,7 @@ export function computeArs(
   // Nearest stock scopes by grid diff count against the mechanical screen
   // grid. The composer's folded grid may differ - this is the deterministic
   // starting signal, not the proposal.
-  const nearestScopes = Object.entries(loadScopeGrid())
-    .map(([scope, def]) => {
-      const differs: string[] = [];
-      for (const [slug, action] of Object.entries(def.stages)) {
-        const mine = screenGrid[slug];
-        if (mine !== undefined && mine !== action) differs.push(slug);
-      }
-      return { scope, diff: differs.length, differs };
-    })
-    .sort((a, b) => a.diff - b.diff || a.scope.localeCompare(b.scope));
+  const nearestScopes = nearestStockScopes(screenGrid);
 
   const arsScores = [
     "| Component | Symbol | Score | Band |",
