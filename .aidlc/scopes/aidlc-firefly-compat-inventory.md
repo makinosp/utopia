@@ -2,23 +2,23 @@
 name: firefly-compat-inventory
 depth: Minimal
 keywords: []
-description: Firefly III互換APIの棚卸し — 実装済み仕様と本家差分、優先順位整理
+description: Inventory of Firefly III-compatible API — implemented specs, upstream gaps, and prioritization
 skeleton: on
 review_cap: advisory
 ---
 
 # firefly-compat-inventory scope
 
-Firefly III互換APIの現状を棚卸しし、実装済み仕様と本家Firefly IIIとの差分、今後の優先順位を整理する分析スコープ。コード実装ではなくドキュメント/分析が成果物。
+Analysis scope to inventory the current Firefly III-compatible API, map implemented specs against upstream Firefly III, and prioritize remaining gaps. No code implementation — deliverables are documentation and analysis only.
 
 ## Why these stages, why skip those
 
-- **intent-capture** — 棚卸しの範囲・比較対象バージョン・優先順位基準を確定（IAE/UA解消）
-- **reverse-engineering** — openapi.yaml / handlers / modules / core / migrations を走査し実装済み仕様を抽出（CSU削減）— 中核
-- **requirements-analysis** — 本家Firefly III仕様との差分マトリクスと優先順位付けフレームを文書化 — 中核
+- **intent-capture** — Confirm inventory scope, upstream comparison baseline, and prioritization criteria (resolve IAE/UA)
+- **reverse-engineering** — Scan openapi.yaml / handlers / modules / core / migrations to extract implemented specs (reduce CSU) — core
+- **requirements-analysis** — Document the gap matrix against upstream Firefly III and the prioritization framework — core
 
-市場調査・フィージビリティ・スコープ分割・チーム編成・モック・設計・実装・検証・デプロイ・運用はすべて対象外（読み取り専用の棚卸し、R=LOW, VE=LOW）。3ステージに絞ることで最小コストで「現状→差分→優先順位」の文書を完結する。
+Market research, feasibility, scope definition, team formation, mockups, design, implementation, verification, deployment, and operations are all out of scope (read-only inventory, R=LOW, VE=LOW). Limiting to three stages delivers the "current state → gaps → priorities" document at minimal cost.
 
 ## Membership
 
-Initialization 3 stages + intent-capture, reverse-engineering, requirements-analysis が EXECUTE。残り26ステージは SKIP。
+Initialization (3 stages) + intent-capture, reverse-engineering, requirements-analysis are EXECUTE. The remaining 26 stages are SKIP.
