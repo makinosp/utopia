@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const MODULE_TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 const MODULE_HARNESS_ROOT = join(MODULE_TOOLS_DIR, "..");
-const KNOWN_HARNESSES = [".claude", ".kiro", ".codex", ".aidlc"] as const;
+const KNOWN_HARNESSES = [".claude", ".kiro", ".codex", ".cursor", ".aidlc"] as const;
 
 export interface HarnessLocation {
   harnessDir?: string;
@@ -13,8 +13,13 @@ export interface HarnessLocation {
   projectDir?: string;
 }
 
-export function isCompiledExecutable(): boolean {
-  return import.meta.url.includes("/$bunfs/");
+export function isCompiledExecutable(
+  moduleUrl = import.meta.url,
+  executable = process.execPath,
+): boolean {
+  const normalizedModuleUrl = moduleUrl.replace(/\\/g, "/");
+  const executableName = basename(executable.replace(/\\/g, "/")).toLowerCase();
+  return normalizedModuleUrl.includes("/$bunfs/") || !executableName.startsWith("bun");
 }
 
 export function compiledExecutable(): string | null {
@@ -91,6 +96,7 @@ export function runtimeHarnessName(
   if (harnessDir === ".aidlc") return "opencode";
   if (harnessDir === ".codex") return "codex";
   if (harnessDir === ".kiro") return "kiro";
+  if (harnessDir === ".cursor") return "cursor";
   return "claude";
 }
 

@@ -15,44 +15,54 @@
 //
 // This is one of the framework's flow-altering hooks. Its contract is the
 // harness-native PreToolUse block: print a reason to stderr and exit 2 to
-// refuse the tool call, exit 0 to allow. The refusal is scoped tightly - one
-// tool (the subagent dispatch), one target agent (aidlc-developer-agent),
-// one stage (code-generation) - and the reason text redirects the conductor
-// to the stage steps it skipped, so a blocked call is a recoverable nudge,
-// not a halt.
+// refuse the tool call, exit 0 to allow. The refusal is scoped tightly to
+// code-generation: developer-agent dispatch and workspace mutation are both
+// blocked until the same approval evidence is current. Writes inside the
+// selected code-generation record dir remain available to create the plan,
+// instructions, questions, and diary that make approval possible.
 //
-// How the hook decides: Step 4 requires the delegation prompt to carry one
-// explicit `AIDLC-UNIT: <unit>` marker sourced from `directive.unit`. The hook
-// resolves the workflow's known units (the compiled bolt DAG when one exists,
-// plus the on-disk construction/<unit>/ dirs - incremental scopes skip
-// units-generation, so the dirs are the only unit register there), resolves
-// that exact marker, and requires the targeted unit to have BOTH a non-empty
-// plan on disk AND an explicit "Approve Plan" answer on its Plan Approval
-// question. Missing, conflicting, and unknown markers block instead of
-// guessing from arbitrary prompt prose. Other answered questions and a
-// "Request Changes" answer never count as approval.
+// How the hook decides: the active directive is the approval authority. A
+// directive with `unit` selects construction/<unit>/code-generation; a
+// zero-Unit directive selects construction/code-generation. Step 4 dispatches
+// carry that choice explicitly as `AIDLC-UNIT: <unit>` or
+// `AIDLC-STAGE: code-generation`, plus the exact `AIDLC-TESTING-CONTRACT`
+// marker. The selected target must have a non-empty plan and test instructions,
+// a structured contract matching current memory/scope/strategy/type, an
+// explicit "Approve Plan" answer, and a matching approval fingerprint over
+// those exact bytes. Missing, conflicting, unknown, stale, and
+// post-approval-modified evidence blocks instead of guessing.
 //
-// Fail-open outside the guarded dispatch: a missing or unreadable state file,
-// an active directive/current stage other than code-generation, malformed
-// stdin, an unknown tool, a non-developer subagent target, or any throw allows
-// the call. Once a code-generation developer dispatch is identified, missing
-// or ambiguous target evidence blocks. The deterministic off-switch
+// Fail-open outside code-generation: a missing or unreadable state file, an
+// active directive/current stage other than code-generation, malformed stdin,
+// an unknown/read-only tool, a non-developer subagent target, or any throw
+// allows the call. Once a code-generation generation path is identified,
+// missing or ambiguous target evidence blocks. The deterministic off-switch
 // AIDLC_DISABLE_PLAN_APPROVAL_GUARD=1 disables enforcement entirely (the
 // documented escape hatch for false-positive storms, mirroring the
 // reviewer-scope guard's off-switch). Every genuine block emits a
 // PLAN_APPROVAL_BLOCKED audit event so the run's record shows when the ordering
 // bit; audit failures never change the decision.
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { appendAuditEntryUnlocked } from "../tools/aidlc-audit.ts";
 import {
   acquireAuditLock,
+  assertNoSymlinkInChainOrThrow,
   auditFilePath,
   type ClaudeCodeHookInput,
   docsRoot,
   errorMessage,
   getField,
+  harnessDir,
   hooksHealthDir,
   isClaudeCodeHookInput,
   isoTimestamp,
@@ -63,12 +73,93 @@ import {
   resolveProjectDirFromHook,
   stateFilePath,
 } from "../tools/aidlc-lib.ts";
+import {
+  beginCodeGeneration,
+  codeGenerationRecordDir,
+  type CodeGenerationTarget,
+  evaluateCodeGenerationApproval,
+  promptTestingContractMarkers,
+} from "../tools/aidlc-testing-posture.ts";
+
+export {
+  questionsFileApproved,
+  questionsFileHasPendingPlanApproval,
+} from "../tools/aidlc-testing-posture.ts";
 
 const HOOK_NAME = "plan-approval-guard";
 
 // The one stage this hook guards and the one dispatch target it inspects.
 const GUARDED_STAGE = "code-generation";
 const GUARDED_AGENT = "aidlc-developer-agent";
+const STAGE_TARGET = "stage-level";
+const WRITE_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
+const SAFE_READ_TOOLS = new Set([
+  "Read",
+  "Glob",
+  "Grep",
+  "WebFetch",
+  "WebSearch",
+  "TodoRead",
+  "TaskOutput",
+  "AskUserQuestion",
+  "fs_read",
+  "file_search",
+  "grep_search",
+  "thinking",
+]);
+const READ_ONLY_SHELL_COMMANDS = new Set([
+  "[",
+  "basename",
+  "cat",
+  "cmp",
+  "cut",
+  "diff",
+  "dirname",
+  "echo",
+  "file",
+  "grep",
+  "head",
+  "ls",
+  "more",
+  "printf",
+  "pwd",
+  "readlink",
+  "realpath",
+  "rg",
+  "sort",
+  "stat",
+  "tail",
+  "test",
+  "tr",
+  "type",
+  "uniq",
+  "wc",
+  "where",
+  "which",
+]);
+const TRACKED_SHELL_MUTATORS = new Set([
+  "cp",
+  "dd",
+  "install",
+  "mv",
+  "perl",
+  "rm",
+  "sed",
+  "tee",
+  "touch",
+  "truncate",
+  "unlink",
+]);
+const READ_ONLY_GIT_SUBCOMMANDS = new Set([
+  "branch",
+  "diff",
+  "grep",
+  "log",
+  "ls-files",
+  "rev-parse",
+  "show",
+  "status",
+]);
 
 // The subagent-dispatch tool names across harness payload shapes. Claude Code
 // delivers Task; the adapters translate their native dispatch tools (Kiro's
@@ -83,18 +174,39 @@ const DISPATCH_TOOLS = new Set(["Task", "Agent"]);
 
 /** Per-unit evidence the main body gathers from disk. */
 export interface UnitEvidence {
-  /** Unit-of-work name, e.g. todo-core. */
-  unit: string;
-  /** construction/<unit>/code-generation/code-generation-plan.md exists and is non-empty. */
+  /** Unit-of-work name, or null for construction/code-generation stage-level work. */
+  unit: string | null;
+  /** The selected record dir's code-generation-plan.md exists and is non-empty. */
   planExists: boolean;
+  /** unit-test-instructions.md exists and is non-empty. */
+  instructionsExist: boolean;
   /** The unit's Plan Approval question records an explicit "Approve Plan" answer. */
   approved: boolean;
+  /** The plan's structured Testing Contract matches the current effective posture. */
+  contractValid: boolean;
+  /** The recorded approval fingerprint matches the plan, instructions, and contract. */
+  fingerprintValid: boolean;
+  receiptValid: boolean;
+  /** The current approved Testing Contract hash, used to bind the worker brief. */
+  contractHash: string | null;
 }
 
 /** The decision's verdict. `mentioned` carries the explicit marker value(s). */
 export interface PlanApprovalVerdict {
   block: boolean;
   mentioned: string[];
+}
+
+function approvalEvidenceIsCurrent(evidence: UnitEvidence | undefined): boolean {
+  return (
+    evidence?.planExists === true &&
+    evidence.instructionsExist &&
+    evidence.approved &&
+    evidence.contractValid &&
+    evidence.fingerprintValid &&
+    evidence.receiptValid &&
+    evidence.contractHash !== null
+  );
 }
 
 // Normalize a state-file stage value for comparison: the field usually holds
@@ -104,143 +216,8 @@ export function normalizeStageName(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
-const MARKDOWN_HEADING_RE = /^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/;
-const ANSWER_TAG_RE = /^\[Answer\]:[ \t]*(.*)$/;
-const APPROVE_PLAN_RE = /^(?:[A-Z][.)][ \t]*)?["']?Approve Plan["']?$/i;
-const QUESTION_PREFIX_RE = /^(?:(?:q(?:uestion)?[ \t]*)?\d+[ \t]*[:.)-][ \t]*)/i;
-const NUMBERED_QUESTION_HEADING_RE = /^(?:q(?:uestion)?[ \t]*)?\d+[ \t]*[.:)-]?[ \t]*$/i;
 const UNIT_MARKER_RE = /^[ \t]*AIDLC-UNIT[ \t]*:[ \t]*(.*?)[ \t]*$/;
-
-function isPlanApprovalLabel(value: string): boolean {
-  let normalized = value.trim().replace(/[?:][ \t]*$/, "").trim();
-  for (const marker of ["**", "__", "*", "_"]) {
-    if (
-      normalized.startsWith(marker) &&
-      normalized.endsWith(marker) &&
-      normalized.length > marker.length * 2
-    ) {
-      normalized = normalized.slice(marker.length, -marker.length).trim();
-      break;
-    }
-  }
-  return normalized.toLowerCase() === "plan approval";
-}
-
-// Approval evidence inside examples or scaffolding is not authoritative.
-// Preserve visible line boundaries while removing fenced code and HTML
-// comments so the section parser below cannot mistake either for a real
-// persisted question.
-function visibleMarkdownLines(body: string): string[] {
-  const lines = body.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").split("\n");
-  const visible: string[] = [];
-  let inComment = false;
-  let fence: { marker: "`" | "~"; length: number } | null = null;
-
-  for (const rawLine of lines) {
-    if (fence) {
-      const closing = /^ {0,3}([`~]+)[ \t]*$/.exec(rawLine);
-      if (
-        closing &&
-        closing[1][0] === fence.marker &&
-        closing[1].length >= fence.length
-      ) {
-        fence = null;
-      }
-      visible.push("");
-      continue;
-    }
-
-    let line = "";
-    let cursor = 0;
-    while (cursor < rawLine.length) {
-      if (inComment) {
-        const end = rawLine.indexOf("-->", cursor);
-        if (end < 0) {
-          cursor = rawLine.length;
-          break;
-        }
-        inComment = false;
-        cursor = end + 3;
-        continue;
-      }
-
-      const start = rawLine.indexOf("<!--", cursor);
-      if (start < 0) {
-        line += rawLine.slice(cursor);
-        break;
-      }
-      line += rawLine.slice(cursor, start);
-      inComment = true;
-      cursor = start + 4;
-    }
-
-    const opening = /^ {0,3}(`{3,}|~{3,})/.exec(line);
-    if (opening) {
-      fence = {
-        marker: opening[1][0] as "`" | "~",
-        length: opening[1].length,
-      };
-      visible.push("");
-      continue;
-    }
-    visible.push(line);
-  }
-
-  return visible;
-}
-
-// Resolve the latest visible Markdown section identified as "Plan Approval".
-// The identifier may be in the heading (`Q1: Plan Approval`) or the first
-// content line under a conventional numbered heading (`## Q1` followed by
-// `Plan Approval`). Examples inside comments or code fences are already removed.
-function latestPlanApprovalAnswer(body: string): {
-  found: boolean;
-  answer: string | null;
-} {
-  let inPlanApproval = false;
-  let awaitingNumberedQuestionText = false;
-  let foundPlanApproval = false;
-  let latestAnswer: string | null = null;
-
-  for (const line of visibleMarkdownLines(body)) {
-    const heading = line.match(MARKDOWN_HEADING_RE);
-    if (heading) {
-      const headingText = heading[2].trim();
-      inPlanApproval = isPlanApprovalLabel(headingText.replace(QUESTION_PREFIX_RE, ""));
-      awaitingNumberedQuestionText =
-        !inPlanApproval && NUMBERED_QUESTION_HEADING_RE.test(headingText);
-      if (inPlanApproval) {
-        foundPlanApproval = true;
-        latestAnswer = null;
-      }
-      continue;
-    }
-    if (awaitingNumberedQuestionText && line.trim().length > 0) {
-      awaitingNumberedQuestionText = false;
-      inPlanApproval = isPlanApprovalLabel(line);
-      if (inPlanApproval) {
-        foundPlanApproval = true;
-        latestAnswer = null;
-      }
-    }
-    if (!inPlanApproval) continue;
-    const answer = line.match(ANSWER_TAG_RE);
-    if (answer) latestAnswer = answer[1].trim();
-  }
-
-  return { found: foundPlanApproval, answer: latestAnswer };
-}
-
-export function questionsFileApproved(body: string): boolean {
-  const latest = latestPlanApprovalAnswer(body);
-  return latest.found && latest.answer !== null && APPROVE_PLAN_RE.test(latest.answer);
-}
-
-/** True only when the latest visible Plan Approval section has a blank answer tag. */
-export function questionsFileHasPendingPlanApproval(body: string): boolean {
-  const latest = latestPlanApprovalAnswer(body);
-  return latest.found && latest.answer !== null && /^_*$/.test(latest.answer);
-}
+const STAGE_MARKER_RE = /^[ \t]*AIDLC-STAGE[ \t]*:[ \t]*(.*?)[ \t]*$/;
 
 /**
  * Return the distinct, non-empty target markers in encounter order. Repeated
@@ -257,12 +234,23 @@ export function promptUnitMarkers(text: string): string[] {
   return Array.from(units);
 }
 
+export function promptStageMarkers(text: string): string[] {
+  const stages = new Set<string>();
+  for (const line of text.split(/\r?\n/)) {
+    const marker = line.match(STAGE_MARKER_RE);
+    const stage = marker?.[1].trim() ?? "";
+    if (stage.length > 0) stages.add(normalizeStageName(stage));
+  }
+  return Array.from(stages);
+}
+
 /**
  * The plan-approval dispatch decision. Pure: no I/O, no environment.
  *
  * Blocks when the dispatch targets the developer agent for code-generation
- * unless the prompt carries exactly one distinct `AIDLC-UNIT` marker, that
- * marker identifies a known unit, and that unit has approved plan evidence.
+ * unless the prompt carries exactly one target marker (`AIDLC-UNIT` or the
+ * stage-level `AIDLC-STAGE: code-generation`), that marker identifies a known
+ * approval target, and that target has approved plan evidence.
  */
 export function evaluatePlanApprovalDispatch(
   toolName: string,
@@ -278,11 +266,30 @@ export function evaluatePlanApprovalDispatch(
   if (subagentType !== GUARDED_AGENT) return allow;
   if (normalizeStageName(ctx.currentStage) !== GUARDED_STAGE) return allow;
 
-  const approved = (u: UnitEvidence) => u.planExists && u.approved;
-  const marked = promptUnitMarkers(promptText);
-  if (marked.length !== 1) return { block: true, mentioned: marked };
-  const target = ctx.units.find((u) => u.unit === marked[0]);
-  return { block: target === undefined || !approved(target), mentioned: marked };
+  const markedUnits = promptUnitMarkers(promptText);
+  const markedStages = promptStageMarkers(promptText);
+  const mentioned = [
+    ...markedUnits,
+    ...markedStages.map((stage) => `stage:${stage}`),
+  ];
+  if (markedUnits.length + markedStages.length !== 1) {
+    return { block: true, mentioned };
+  }
+  const target =
+    markedUnits.length === 1
+      ? ctx.units.find((u) => u.unit === markedUnits[0])
+      : markedStages[0] === GUARDED_STAGE
+        ? ctx.units.find((u) => u.unit === null)
+        : undefined;
+  const contractMarkers = promptTestingContractMarkers(promptText);
+  return {
+    block:
+      target === undefined ||
+      !approvalEvidenceIsCurrent(target) ||
+      contractMarkers.length !== 1 ||
+      contractMarkers[0] !== target.contractHash,
+    mentioned,
+  };
 }
 
 // The block reason handed back to the conductor through the harness's
@@ -292,19 +299,46 @@ export function evaluatePlanApprovalDispatch(
 export function blockReason(mentioned: string[]): string {
   const scope =
     mentioned.length === 1
-      ? `unit ${mentioned[0]}`
+      ? mentioned[0] === `stage:${GUARDED_STAGE}`
+        ? "the zero-Unit stage-level implementation"
+        : `unit ${mentioned[0]}`
       : mentioned.length > 1
-        ? `one unit (conflicting AIDLC-UNIT markers: ${mentioned.join(", ")})`
-        : "one unit (AIDLC-UNIT marker missing)";
+        ? `one target, but the brief names several (${mentioned.join(", ")})`
+        : "one target, but the brief does not name it";
   return (
-    `plan-approval guard: code-generation must not dispatch ${GUARDED_AGENT} before the ` +
-    `plan is written and approved for ${scope}. Follow the stage file's Steps 2-3 first: ` +
-    `write <record>/construction/<unit>/code-generation/code-generation-plan.md, create ` +
-    `code-generation-questions.md with a Plan Approval question and a blank [Answer]: tag, ` +
-    `present that question, END the turn, and record the human's explicit "Approve Plan" ` +
-    `answer in the tag. Only then dispatch generation (Step 4), starting the delegation ` +
-    `prompt with the exact line "AIDLC-UNIT: <unit>". ` +
-    `code-generation-plan.md is the INPUT to generation, never a retroactive summary.`
+    `Code generation cannot start for ${scope} because its plan and test instructions are ` +
+    `not currently approved. Finish Steps 2-3 in code-generation: update ` +
+    `code-generation-plan.md and unit-test-instructions.md, refresh the Testing Contract and ` +
+    `approval fingerprint, present Plan Approval, end the turn, and wait for the human's ` +
+    `"Approve Plan" answer. Then retry the developer handoff with ` +
+    `"AIDLC-UNIT: <unit>" or "AIDLC-STAGE: code-generation", followed by ` +
+    `"AIDLC-TESTING-CONTRACT: <contract hash>".`
+  );
+}
+
+export function mutationBlockReason(
+  target: string,
+  unit: string | null,
+  opaqueShell = false,
+): string {
+  const scope = unit === null ? "the zero-Unit stage-level implementation" : `unit ${unit}`;
+  const action = opaqueShell
+    ? `run mutation-capable ${target}`
+    : `modify workspace path "${target}"`;
+  return (
+    `Code generation cannot ${action} for ${scope} because ` +
+    `the plan, unit-test instructions, and current Testing Contract are fingerprinted and ` +
+    `approved. Writes inside the selected code-generation record directory remain ` +
+    `available for Steps 2-3. Record the human's explicit "Approve Plan" answer before beginning ` +
+    `Step 4 generation.`
+  );
+}
+
+function authorityBlockReason(reason: string): string {
+  return (
+    "Code generation cannot start because its Plan Approval authority is ambiguous or stale. " +
+    `${reason}. Run a fresh \`aidlc-orchestrate.ts next\` and use that exact directive; ` +
+    "no stage-level fallback is permitted."
   );
 }
 
@@ -326,7 +360,7 @@ export function knownUnits(projectDir: string, recordDir: string): string[] {
     const constructionDir = join(recordDir, "construction");
     if (existsSync(constructionDir)) {
       for (const entry of readdirSync(constructionDir, { withFileTypes: true })) {
-        if (entry.isDirectory()) units.add(entry.name);
+        if (entry.isDirectory() && entry.name !== GUARDED_STAGE) units.add(entry.name);
       }
     }
   } catch {
@@ -335,25 +369,257 @@ export function knownUnits(projectDir: string, recordDir: string): string[] {
   return Array.from(units);
 }
 
-export function gatherUnitEvidence(recordDir: string, units: string[]): UnitEvidence[] {
+export function gatherUnitEvidence(projectDir: string, units: string[]): UnitEvidence[] {
   return units.map((unit) => {
-    const stageDirPath = join(recordDir, "construction", unit, GUARDED_STAGE);
-    let planExists = false;
-    let approved = false;
-    try {
-      const planPath = join(stageDirPath, "code-generation-plan.md");
-      if (existsSync(planPath)) {
-        planExists = readFileSync(planPath, "utf-8").trim().length > 0;
-      }
-      const questionsPath = join(stageDirPath, "code-generation-questions.md");
-      if (existsSync(questionsPath)) {
-        approved = questionsFileApproved(readFileSync(questionsPath, "utf-8"));
-      }
-    } catch {
-      // Unreadable evidence counts as missing for this unit.
-    }
-    return { unit, planExists, approved };
+    const approval = evaluateCodeGenerationApproval(projectDir, { unit });
+    return {
+      unit,
+      planExists: approval.planExists,
+      instructionsExist: approval.instructionsExist,
+      approved: approval.approved,
+      contractValid: approval.contractValid,
+      fingerprintValid: approval.fingerprintValid,
+      receiptValid: approval.receiptValid,
+      contractHash: approval.contractHash,
+    };
   });
+}
+
+export function gatherApprovalEvidence(projectDir: string, units: string[]): UnitEvidence[] {
+  const stageApproval = evaluateCodeGenerationApproval(projectDir, { unit: null });
+  return [
+    {
+      unit: null,
+      planExists: stageApproval.planExists,
+      instructionsExist: stageApproval.instructionsExist,
+      approved: stageApproval.approved,
+      contractValid: stageApproval.contractValid,
+      fingerprintValid: stageApproval.fingerprintValid,
+      receiptValid: stageApproval.receiptValid,
+      contractHash: stageApproval.contractHash,
+    },
+    ...gatherUnitEvidence(projectDir, units),
+  ];
+}
+
+function isWithinDir(path: string, dir: string): boolean {
+  const rel = relative(dir, path);
+  return rel === "" || (!isAbsolute(rel) && rel !== ".." && !rel.startsWith(`..${sep}`));
+}
+
+function isTrustedRecordTarget(
+  projectDir: string,
+  target: string,
+  recordDir: string,
+): boolean {
+  try {
+    const projectLexical = resolve(projectDir);
+    const projectReal = realpathSync(projectLexical);
+    const targetAbs = resolve(target);
+    const recordAbs = resolve(recordDir);
+    assertNoSymlinkInChainOrThrow(
+      projectReal,
+      relative(projectLexical, recordAbs),
+    );
+    assertNoSymlinkInChainOrThrow(
+      projectReal,
+      relative(projectLexical, targetAbs),
+    );
+    return isWithinDir(targetAbs, recordAbs);
+  } catch {
+    return false;
+  }
+}
+
+interface MutationIntent {
+  targets: string[];
+  opaqueShell: boolean;
+  shellCommand: string | null;
+}
+
+function normalizedCommandName(name: string): string {
+  return basename(name).toLowerCase().replace(/\.exe$/, "");
+}
+
+function gitSubcommand(args: string[]): string | null {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (["-C", "--git-dir", "--work-tree", "--namespace"].includes(arg)) {
+      i++;
+      continue;
+    }
+    if (
+      arg.startsWith("--git-dir=") ||
+      arg.startsWith("--work-tree=") ||
+      arg.startsWith("--namespace=")
+    ) {
+      continue;
+    }
+    if (arg.startsWith("-")) continue;
+    return arg;
+  }
+  return null;
+}
+
+function isFrameworkToolInvocation(
+  projectDir: string,
+  cwd: string,
+  name: string,
+  args: string[],
+): boolean {
+  if (normalizedCommandName(name) !== "bun") return false;
+  if (
+    args.some((arg) =>
+      arg === "-r" ||
+      arg === "--require" ||
+      arg === "--preload" ||
+      arg.startsWith("--require=") ||
+      arg.startsWith("--preload=")
+    )
+  ) {
+    return false;
+  }
+  let scriptIndex = 0;
+  if (args[0] === "run") scriptIndex = 1;
+  const script = args[scriptIndex];
+  if (!script || script.startsWith("-")) return false;
+  const projectLexical = resolve(projectDir);
+  const absolute = isAbsolute(script) ? resolve(script) : resolve(cwd, script);
+  const trustedToolsDir = resolve(projectLexical, harnessDir(), "tools");
+  if (
+    dirname(absolute) !== trustedToolsDir ||
+    !/^aidlc-[A-Za-z0-9._-]+\.ts$/.test(basename(absolute))
+  ) {
+    return false;
+  }
+  try {
+    const projectReal = realpathSync(projectLexical);
+    assertNoSymlinkInChainOrThrow(
+      projectReal,
+      relative(projectLexical, absolute),
+    );
+    return lstatSync(absolute).isFile() && !lstatSync(absolute).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function shellInvocationNeedsApproval(
+  projectDir: string,
+  cwd: string,
+  invocation: { name: string; args: string[] },
+  hasConcreteTargets: boolean,
+): boolean {
+  const name = normalizedCommandName(invocation.name);
+  if (name === "sort") {
+    return invocation.args.some(
+      (arg) => arg === "-o" || arg === "--output" || arg.startsWith("--output="),
+    );
+  }
+  if (name === "uniq") {
+    const operands = invocation.args.filter((arg) => !arg.startsWith("-"));
+    return operands.length >= 2;
+  }
+  if (READ_ONLY_SHELL_COMMANDS.has(name)) return false;
+  if (name === "git") {
+    if (
+      invocation.args.some(
+        (arg) => arg === "--output" || arg.startsWith("--output="),
+      )
+    ) {
+      return true;
+    }
+    const subcommand = gitSubcommand(invocation.args);
+    if (subcommand === "branch") {
+      return !invocation.args.includes("--show-current");
+    }
+    return subcommand === null || !READ_ONLY_GIT_SUBCOMMANDS.has(subcommand);
+  }
+  if (isFrameworkToolInvocation(projectDir, cwd, name, invocation.args)) return false;
+  if (
+    TRACKED_SHELL_MUTATORS.has(name) &&
+    hasConcreteTargets &&
+    !invocation.args.some((arg) => /[$`*?]/.test(arg))
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function shellUsesDynamicEvaluation(command: string): boolean {
+  let quote: "'" | '"' | null = null;
+  let escaped = false;
+  for (let i = 0; i < command.length; i++) {
+    const ch = command[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\" && quote !== "'") {
+      escaped = true;
+      continue;
+    }
+    if (quote === "'") {
+      if (ch === "'") quote = null;
+      continue;
+    }
+    if (ch === '"') {
+      quote = quote === '"' ? null : '"';
+      continue;
+    }
+    if (ch === "'" && quote === null) {
+      quote = "'";
+      continue;
+    }
+    if (ch === "`" || ch === "$") return true;
+    if ((ch === "$" || ch === "<" || ch === ">") && command[i + 1] === "(") {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function mutationIntent(
+  projectDir: string,
+  toolName: string,
+  toolInput: Record<string, unknown> | undefined,
+  cwd: string,
+): Promise<MutationIntent> {
+  let targets: string[] = [];
+  let opaqueShell = false;
+  let shellCommand: string | null = null;
+  if (toolName === "Bash") {
+    const command = toolInput?.command;
+    if (typeof command !== "string") {
+      return { targets: [], opaqueShell: false, shellCommand: null };
+    }
+    shellCommand = command;
+    const { shellCommandInvocations, shellWriteTargets } = await import(
+      "./aidlc-review-freeze.ts"
+    );
+    targets = shellWriteTargets(command, cwd);
+    opaqueShell =
+      shellUsesDynamicEvaluation(command) ||
+      shellCommandInvocations(command).some((invocation) =>
+        shellInvocationNeedsApproval(projectDir, cwd, invocation, targets.length > 0)
+      );
+  } else if (WRITE_TOOLS.has(toolName)) {
+    const input = toolInput ?? {};
+    const add = (value: unknown) => {
+      if (typeof value === "string" && value.length > 0) targets.push(value);
+    };
+    add(input.file_path);
+    add(input.notebook_path);
+    add(input.path);
+    if (Array.isArray(input.paths)) for (const path of input.paths) add(path);
+  }
+  return {
+    targets: targets.map((target) =>
+      isAbsolute(target) ? resolve(target) : resolve(cwd, target)
+    ),
+    opaqueShell,
+    shellCommand,
+  };
 }
 
 // --- Main ---------------------------------------------------------------------
@@ -385,34 +651,145 @@ export async function run(input: string): Promise<number> {
   }
 
   const toolName = parsed.tool_name ?? "";
-  if (!DISPATCH_TOOLS.has(toolName)) return 0;
   const toolInput = parsed.tool_input ?? {};
   const subagentType =
     typeof toolInput.subagent_type === "string" ? toolInput.subagent_type : "";
-  if (subagentType !== GUARDED_AGENT) return 0;
+  const guardedDispatch =
+    DISPATCH_TOOLS.has(toolName) && subagentType === GUARDED_AGENT;
+  if (SAFE_READ_TOOLS.has(toolName)) return 0;
+  const mutationCapable =
+    toolName === "Bash" ||
+    WRITE_TOOLS.has(toolName) ||
+    (!DISPATCH_TOOLS.has(toolName) && toolName.length > 0);
+  if (!guardedDispatch && !mutationCapable) return 0;
+  const cwd = typeof parsed.cwd === "string" ? parsed.cwd : projectDir;
 
   let verdict: PlanApprovalVerdict;
   let units: UnitEvidence[] = [];
+  let authorityFailure: string | null = null;
+  let blockedMutation: {
+    target: string;
+    unit: string | null;
+    opaqueShell: boolean;
+  } | null = null;
   try {
     const statePath = stateFilePath(projectDir);
     if (!existsSync(statePath)) return 0; // no workflow - fail open
     const state = readFileSync(statePath, "utf-8");
     const currentStage = getField(state, "Current Stage") ?? "";
-    const activeStage = readActiveDirectiveMarker(projectDir, state)?.stage ?? currentStage;
-    if (normalizeStageName(activeStage) !== GUARDED_STAGE) return 0;
-
-    const recordDir = docsRoot(projectDir);
-    units = gatherUnitEvidence(recordDir, knownUnits(projectDir, recordDir));
-    const promptText = [toolInput.prompt, toolInput.description]
-      .filter((v): v is string => typeof v === "string")
+    const activeDirective = readActiveDirectiveMarker(projectDir, state);
+    const durableStage = normalizeStageName(currentStage);
+    const directiveStage = normalizeStageName(activeDirective?.stage ?? "");
+    const dispatchPrompt = [toolInput.prompt, toolInput.description]
+      .filter((value): value is string => typeof value === "string")
       .join("\n");
-    verdict = evaluatePlanApprovalDispatch(toolName, subagentType, promptText, {
-      currentStage: activeStage,
-      units,
-    });
+    const explicitPlanDispatch =
+      promptUnitMarkers(dispatchPrompt).length > 0 ||
+      promptStageMarkers(dispatchPrompt).length > 0 ||
+      promptTestingContractMarkers(dispatchPrompt).length > 0;
+    const codeGenerationRelevant =
+      directiveStage === GUARDED_STAGE ||
+      durableStage === GUARDED_STAGE ||
+      (guardedDispatch && explicitPlanDispatch);
+    if (!codeGenerationRelevant) return 0;
+    const knownMutationTool =
+      toolName === "Bash" || WRITE_TOOLS.has(toolName);
+    const mutation = guardedDispatch
+      ? { targets: [], opaqueShell: false, shellCommand: null }
+      : knownMutationTool
+        ? await mutationIntent(projectDir, toolName, toolInput, cwd)
+        : {
+            targets: [],
+            opaqueShell: true,
+            shellCommand: `unknown mutation-capable tool: ${toolName}`,
+          };
+    if (!guardedDispatch && mutation.targets.length === 0 && !mutation.opaqueShell) {
+      return 0;
+    }
+
+    if (
+      activeDirective?.version !== 2 ||
+      directiveStage !== GUARDED_STAGE
+    ) {
+      authorityFailure =
+        "the current state has no matching v2 code-generation active directive";
+      verdict = { block: true, mentioned: [] };
+    } else {
+      const recordDir = docsRoot(projectDir);
+      units = gatherApprovalEvidence(projectDir, knownUnits(projectDir, recordDir));
+      if (guardedDispatch) {
+        verdict = evaluatePlanApprovalDispatch(toolName, subagentType, dispatchPrompt, {
+          currentStage: activeDirective.stage,
+          units,
+        });
+      } else if (activeDirective.kind !== "run-stage") {
+        authorityFailure =
+          `workspace mutation cannot select one approval target from directive kind "${activeDirective.kind}"`;
+        verdict = { block: true, mentioned: [] };
+      } else {
+        const unit = activeDirective.unit?.trim() || null;
+        const target: CodeGenerationTarget = { unit };
+        const approvalDir = resolve(codeGenerationRecordDir(projectDir, unit));
+        const outsideRecord = mutation.targets.find(
+          (candidate) =>
+            !isTrustedRecordTarget(projectDir, candidate, approvalDir),
+        );
+        if (!outsideRecord && !mutation.opaqueShell) return 0;
+        const approval = evaluateCodeGenerationApproval(projectDir, target);
+        const evidence: UnitEvidence = {
+          unit,
+          planExists: approval.planExists,
+          instructionsExist: approval.instructionsExist,
+          approved: approval.approved,
+          contractValid: approval.contractValid,
+          fingerprintValid: approval.fingerprintValid,
+          receiptValid: approval.receiptValid,
+          contractHash: approval.contractHash,
+        };
+        verdict = {
+          block: !approvalEvidenceIsCurrent(evidence),
+          mentioned: [unit ?? `stage:${GUARDED_STAGE}`],
+        };
+        if (verdict.block) {
+          blockedMutation = {
+            target:
+              outsideRecord ??
+              `shell command: ${(mutation.shellCommand ?? "").trim().slice(0, 160)}`,
+            unit,
+            opaqueShell: outsideRecord === undefined,
+          };
+        }
+      }
+    }
   } catch (e) {
     recordHookDrop(projectDir, HOOK_NAME, errorMessage(e));
-    return 0; // evidence gathering failed - fail open
+    authorityFailure =
+      `Plan Approval authority evaluation failed closed: ${errorMessage(e)}`;
+    verdict = { block: true, mentioned: [] };
+  }
+  if (!verdict.block) {
+    try {
+      if (guardedDispatch) {
+        for (const mentioned of verdict.mentioned) {
+          beginCodeGeneration(projectDir, {
+            unit:
+              mentioned === `stage:${GUARDED_STAGE}` ? null : mentioned,
+          });
+        }
+      } else if (blockedMutation === null) {
+        const state = readFileSync(stateFilePath(projectDir), "utf-8");
+        const marker = readActiveDirectiveMarker(projectDir, state);
+        if (marker?.version === 2 && marker.kind === "run-stage") {
+          beginCodeGeneration(projectDir, {
+            unit: marker.unit?.trim() || null,
+          });
+        }
+      }
+    } catch (e) {
+      authorityFailure =
+        `Code Generation could not start from its protected approval receipt: ${errorMessage(e)}`;
+      verdict = { block: true, mentioned: verdict.mentioned };
+    }
   }
   if (!verdict.block) return 0;
 
@@ -429,9 +806,13 @@ export async function run(input: string): Promise<number> {
             "PLAN_APPROVAL_BLOCKED",
             {
               Tool: toolName,
-              Target: subagentType,
+              Target: guardedDispatch ? subagentType : blockedMutation?.target ?? "",
               Stage: GUARDED_STAGE,
-              Unit: verdict.mentioned.join(", ") || "(missing marker)",
+              Unit:
+                blockedMutation?.unit ??
+                (verdict.mentioned[0] === `stage:${GUARDED_STAGE}`
+                  ? STAGE_TARGET
+                  : verdict.mentioned.join(", ") || "(missing marker)"),
             },
             projectDir,
           );
@@ -450,7 +831,17 @@ export async function run(input: string): Promise<number> {
     // Advisory emission only.
   }
 
-  process.stderr.write(`${blockReason(verdict.mentioned)}\n`);
+  process.stderr.write(
+    `${authorityFailure
+      ? authorityBlockReason(authorityFailure)
+      : blockedMutation
+      ? mutationBlockReason(
+          blockedMutation.target,
+          blockedMutation.unit,
+          blockedMutation.opaqueShell,
+        )
+      : blockReason(verdict.mentioned)}\n`,
+  );
   return 2; // harness PreToolUse reject contract: exit 2 + stderr blocks
 }
 

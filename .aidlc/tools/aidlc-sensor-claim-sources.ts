@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { errorMessage } from "./aidlc-lib.ts";
+import {
+	authoritativeProjectDescription,
+	errorMessage,
+	readProjectDescriptionAuthority,
+	visibleMarkdownLines,
+} from "./aidlc-lib.ts";
 
 interface Flags {
 	stage?: string;
@@ -28,11 +33,13 @@ interface SourceUniverse {
 	answeredQuestions: Set<string>;
 	assumptionsAccepted: boolean;
 	acceptedAssumptions: Set<string>;
+	pastedDocumentPresent: boolean;
 	findings: string[];
 }
 
 interface RecordAuthority {
 	projectDescription: string;
+	pastedDocumentPresent: boolean;
 	scope: string;
 	projectRoot: string;
 	activeSpace: string;
@@ -73,65 +80,6 @@ function parseFlags(argv: string[]): Flags {
 function fail(message: string): never {
 	process.stderr.write(`aidlc-sensor-claim-sources: ${message}\n`);
 	process.exit(1);
-}
-
-function visibleMarkdownLines(body: string): string[] {
-	const lines = body.replace(/^﻿/, "").replace(/\r\n/g, "\n").split("\n");
-	const visible: string[] = [];
-	let inComment = false;
-	let fence: { marker: "`" | "~"; length: number } | null = null;
-
-	for (const rawLine of lines) {
-		if (fence) {
-			const closing = /^ {0,3}([`~]+)[ \t]*$/.exec(rawLine);
-			if (
-				closing &&
-				closing[1][0] === fence.marker &&
-				closing[1].length >= fence.length
-			) {
-				fence = null;
-			}
-			visible.push("");
-			continue;
-		}
-
-		let line = "";
-		let cursor = 0;
-		while (cursor < rawLine.length) {
-			if (inComment) {
-				const end = rawLine.indexOf("-->", cursor);
-				if (end < 0) {
-					cursor = rawLine.length;
-					break;
-				}
-				inComment = false;
-				cursor = end + 3;
-				continue;
-			}
-
-			const start = rawLine.indexOf("<!--", cursor);
-			if (start < 0) {
-				line += rawLine.slice(cursor);
-				break;
-			}
-			line += rawLine.slice(cursor, start);
-			inComment = true;
-			cursor = start + 4;
-		}
-
-		const opening = /^ {0,3}(`{3,}|~{3,})/.exec(line);
-		if (opening) {
-			fence = {
-				marker: opening[1][0] as "`" | "~",
-				length: opening[1].length,
-			};
-			visible.push("");
-			continue;
-		}
-		visible.push(line);
-	}
-
-	return visible;
 }
 
 function h2Heading(line: string): string | null {
@@ -212,9 +160,10 @@ function loadRecordAuthority(stageDir: string): RecordAuthority {
 	const findings: string[] = [];
 	const recordRoot = findRecordRoot(stageDir);
 	if (!recordRoot) {
-		return {
-			projectDescription: "",
-			scope: "",
+			return {
+				projectDescription: "",
+				pastedDocumentPresent: false,
+				scope: "",
 			projectRoot: "",
 			activeSpace: "",
 			findings: ["cannot verify source register: aidlc-state.md was not found"],
@@ -230,14 +179,31 @@ function loadRecordAuthority(stageDir: string): RecordAuthority {
 		);
 	}
 
-	const projectDescription = stateField(stateBody, "Project");
+	let rawProjectDescription = "";
+	try {
+		rawProjectDescription = readProjectDescriptionAuthority(
+			recordRoot,
+			stateBody,
+		).description;
+	} catch (error) {
+		findings.push(
+			`cannot verify source register: ${errorMessage(error)}`,
+		);
+	}
+	const description = authoritativeProjectDescription(rawProjectDescription);
+	if (description.error) {
+		findings.push(`cannot verify source register: ${description.error}`);
+	}
+	const projectDescription = description.error
+		? ""
+		: description.description;
 	const scope = stateField(stateBody, "Scope");
 	const projectRoot = projectRootFor(recordRoot, stateBody);
 	const activeSpace = projectRoot
 		? activeSpaceFor(projectRoot, recordRoot)
 		: "";
 	if (!projectDescription) {
-		findings.push("aidlc-state.md is missing Project authority for [desc]");
+		findings.push("the record is missing authoritative project directions for [desc]");
 	}
 	if (!scope) findings.push("aidlc-state.md is missing Scope authority for [scope]");
 	if (!projectRoot) {
@@ -249,6 +215,7 @@ function loadRecordAuthority(stageDir: string): RecordAuthority {
 
 	return {
 		projectDescription,
+		pastedDocumentPresent: description.pastedDocumentPresent,
 		scope,
 		projectRoot,
 		activeSpace,
@@ -330,7 +297,10 @@ function memoryRuleMatches(
 		);
 		return false;
 	}
-	const sections = sectionsNamed(visibleMarkdownLines(memoryBody), heading);
+	const sections = sectionsNamed(
+		visibleMarkdownLines(memoryBody, { preserveIndentedCode: true }),
+		heading,
+	);
 	if (sections.length !== 1) {
 		findings.push(
 			`[${id}] memory source must contain exactly one ## ${heading} heading`,
@@ -364,10 +334,11 @@ function parseSourceUniverse(
 	if (!existsSync(questionsPath)) {
 		return {
 			registered: new Set(),
-			answeredQuestions: new Set(),
-			assumptionsAccepted: false,
-			acceptedAssumptions: new Set(),
-			findings: [`questions file missing: ${questionsPath}`],
+				answeredQuestions: new Set(),
+				assumptionsAccepted: false,
+				acceptedAssumptions: new Set(),
+				pastedDocumentPresent: false,
+				findings: [`questions file missing: ${questionsPath}`],
 		};
 	}
 
@@ -377,16 +348,17 @@ function parseSourceUniverse(
 	} catch (error) {
 		return {
 			registered: new Set(),
-			answeredQuestions: new Set(),
-			assumptionsAccepted: false,
-			acceptedAssumptions: new Set(),
-			findings: [
+				answeredQuestions: new Set(),
+				assumptionsAccepted: false,
+				acceptedAssumptions: new Set(),
+				pastedDocumentPresent: false,
+				findings: [
 				`failed to read questions file ${questionsPath}: ${errorMessage(error)}`,
 			],
 		};
 	}
 
-	const lines = visibleMarkdownLines(body);
+	const lines = visibleMarkdownLines(body, { preserveIndentedCode: true });
 	const labels = referenceLabels(body);
 	const authority = loadRecordAuthority(stageDir);
 	findings.push(...authority.findings);
@@ -414,13 +386,13 @@ function parseSourceUniverse(
 					value,
 				);
 				const parsed = desc ? parseQuotedValue(desc[1]) : null;
-				if (parsed === null) {
-					findings.push(
-						'[desc] must use Initial description: "<verbatim project description>"',
-					);
+					if (parsed === null) {
+						findings.push(
+							'[desc] must use Initial description: "<authoritative user directions>"',
+						);
 				} else if (parsed !== authority.projectDescription) {
 					findings.push(
-						"[desc] does not exactly match Project in aidlc-state.md",
+						"[desc] does not exactly match the authoritative project description",
 					);
 				} else {
 					valid = true;
@@ -500,10 +472,11 @@ function parseSourceUniverse(
 	return {
 		registered,
 		answeredQuestions,
-		assumptionsAccepted:
-			assumptionAnswer.trim() === ACCEPT_ASSUMPTIONS_ANSWER,
-		acceptedAssumptions,
-		findings,
+			assumptionsAccepted:
+				assumptionAnswer.trim() === ACCEPT_ASSUMPTIONS_ANSWER,
+			acceptedAssumptions,
+			pastedDocumentPresent: authority.pastedDocumentPresent,
+			findings,
 	};
 }
 
@@ -531,7 +504,7 @@ function claimBlocks(
 	blocks: ClaimBlock[];
 	hasAssumptionsSection: boolean;
 } {
-	const lines = visibleMarkdownLines(body).map((line, index) =>
+	const lines = visibleMarkdownLines(body, { preserveIndentedCode: true }).map((line, index) =>
 		definitionLines.has(index) ? "" : line,
 	);
 	const tableHeaders = new Set<number>();
@@ -1180,7 +1153,7 @@ function normalizedReferenceLabel(label: string): string {
 }
 
 function referenceAnalysis(body: string): ReferenceAnalysis {
-	const visibleLines = visibleMarkdownLines(body);
+	const visibleLines = visibleMarkdownLines(body, { preserveIndentedCode: true });
 	const lines = documentContainerLines(visibleLines);
 	const labels = new Set<string>();
 	const definitionLines = new Set<number>();
@@ -1205,7 +1178,7 @@ function referenceLabels(body: string): Set<string> {
 
 function withoutReferenceDefinitions(text: string): string {
 	const analysis = referenceAnalysis(text);
-	return visibleMarkdownLines(text)
+	return visibleMarkdownLines(text, { preserveIndentedCode: true })
 		.map((line, index) => (analysis.definitionLines.has(index) ? "" : line))
 		.join("\n");
 }
@@ -1339,9 +1312,15 @@ function inspectDeliverable(
 			}
 		}
 
-		for (const tag of tags) {
-			if (tag === "assumption") continue;
-			if (tag.startsWith("Q")) {
+			for (const tag of tags) {
+				if (tag === "assumption") continue;
+				if (tag === "desc" && universe.pastedDocumentPresent) {
+					findings.push(
+						`${location}: [desc] cannot ground artifacts when the initial request contains <document>; use confirmed [Q<n>]`,
+					);
+					continue;
+				}
+				if (tag.startsWith("Q")) {
 				if (!universe.answeredQuestions.has(tag)) {
 					findings.push(`${location}: [${tag}] has no filled answer`);
 				}

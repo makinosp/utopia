@@ -5,9 +5,10 @@
 // Claude, Codex, and Copilot consume the emitted updatedInput directly.
 // OpenCode's adapter consumes the same output and mutates output.args. Kiro CLI
 // has no input-rewrite channel, so its adapter observes the proposed rewrite
-// and relies on native agent resource preload. Kiro IDE cannot expose tool
-// arguments and instead preloads active memory through always-included workspace
-// steering with live file references.
+// and relies on native agent resource preload. Kiro IDE does not register this
+// hook because tool-argument delivery is not uniform across supported
+// generations; it instead preloads active memory through always-included
+// workspace steering with live file references.
 
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -15,7 +16,11 @@ import { isAbsolute, join, resolve } from "node:path";
 import {
   agentsDir,
   getField,
+  markSubagentInflight,
+  resolveWorkflowSelection,
   stateFilePath,
+  stateFilePathForSelection,
+  validSessionId,
 } from "../tools/aidlc-lib.ts";
 import {
   type GraphStage,
@@ -28,6 +33,7 @@ import {
 
 type HookInput = {
   cwd?: string;
+  session_id?: unknown;
   tool_name?: string;
   tool_input?: Record<string, unknown>;
 };
@@ -262,6 +268,40 @@ export function dispatchHookOutput(
   );
 }
 
+function recordAcceptedBackgroundDispatch(
+  parsed: HookInput,
+  projectDir: string,
+): void {
+  try {
+    const toolName = (parsed.tool_name ?? "").toLowerCase();
+    if (
+      !DISPATCH_TOOLS.has(toolName) ||
+      parsed.tool_input?.run_in_background !== true
+    ) {
+      return;
+    }
+    const rawSessionId = parsed.session_id;
+    if (
+      rawSessionId !== undefined &&
+      rawSessionId !== "" &&
+      (typeof rawSessionId !== "string" ||
+        validSessionId(rawSessionId) === null)
+    ) {
+      return;
+    }
+    const sessionId =
+      typeof rawSessionId === "string" && rawSessionId.length > 0
+        ? rawSessionId
+        : undefined;
+    const selection = resolveWorkflowSelection(projectDir, { sessionId });
+    if (!existsSync(stateFilePathForSelection(projectDir, selection))) return;
+    markSubagentInflight(projectDir, rawSessionId);
+  } catch {
+    // In-flight evidence is advisory. Its write must never alter dispatch
+    // acceptance, rule-delivery output, or the hook's established exit codes.
+  }
+}
+
 export async function run(input: string): Promise<number> {
   let parsed: HookInput;
   try {
@@ -282,7 +322,10 @@ export async function run(input: string): Promise<number> {
     process.stderr.write(`${result.error}\n`);
     return 2;
   }
-  if (!result.changed || !result.updatedInput) return 0;
+  if (!result.changed || !result.updatedInput) {
+    recordAcceptedBackgroundDispatch(parsed, projectDir);
+    return 0;
+  }
   const output = `${JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
@@ -298,6 +341,7 @@ export async function run(input: string): Promise<number> {
           "Nothing partial was written. This harness loads the same rule files itself, through " +
           "its own active-memory preload fallback, so the work continues without them attached.\n",
       );
+      recordAcceptedBackgroundDispatch(parsed, projectDir);
       return 3;
     }
     process.stderr.write(
@@ -308,6 +352,7 @@ export async function run(input: string): Promise<number> {
     );
     return 2;
   }
+  recordAcceptedBackgroundDispatch(parsed, projectDir);
   process.stdout.write(output);
   return 0;
 }
