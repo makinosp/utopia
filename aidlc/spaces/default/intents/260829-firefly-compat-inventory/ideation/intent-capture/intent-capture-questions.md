@@ -35,7 +35,7 @@ C. Prioritization criteria (usage frequency / effort / compatibility importance)
 D. All of A + B + C
 E. Not yet defined
 
-[Answer]: C
+[Answer]: D — Updated from C on 2026-08-29 per consistency review. A/B are prerequisite intermediate artifacts for C; all three are in scope.
 
 ## Q4. Why is this inventory needed now? (Trigger)
 
@@ -88,3 +88,12 @@ D. I don't understand what the scope means — please explain
 E. Other (please describe…)
 
 [Answer]: A
+
+## Consolidated Summary Confirmation
+
+Does this all look correct before I generate the artifact?
+
+- Looks correct
+- Request changes
+
+[Answer]: Looks correct
