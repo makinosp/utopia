@@ -112,7 +112,7 @@ None remaining after Q1-Q8 confirmation. All eight clarifying questions have bee
 
 ## Sources
 
-- [desc] Initial description: "Firefly III互換APIの現状を棚卸しして、実装済み仕様と本家との差分、今後の優先順位を整理したい。"
+- [desc] Initial description: "Take inventory of the current state of the Firefly III compatible API, organize the differences between the implemented specifications and the original, and prioritize what comes next."
 - [scope] Workflow-selected scope: `firefly-compat-inventory`.
 - [Q1] Q1 Answer: A, B — Compatibility risk + roadmap visibility
 - [Q2] Q2 Answer: A — Internal development team
