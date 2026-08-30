@@ -1,5 +1,7 @@
 # Technology Stack — Utopia
 
+> **Snapshot note:** Versions and technology choices reflect the reverse-engineering snapshot (`f92e948e`, 2026-08-29). Re-check `Cargo.toml` / `package.json` / `Dockerfile` for current versions before upgrading.
+
 ## Languages
 | Language | Version | Usage |
 |---|---|---|

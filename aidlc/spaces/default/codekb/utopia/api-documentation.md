@@ -1,13 +1,13 @@
 # API Documentation — Utopia (Firefly III Compat Surface)
 
 ## Overview
-Utopia exposes a **Firefly III-compatible REST API** over Axum. The contract source of truth is `openapi.yaml` (OpenAPI 3.0.3, ~1500 lines) and `src/api/router.rs` (16 routes). All business routes are under `/api/v1/*` and require `Authorization: Bearer <token>` except `POST /api/v1/bootstrap/tokens` (uses `X-Bootstrap-Key`) and `GET /metrics` (no auth). Responses use Firefly envelope/pagination/error shapes from `src/core/compatibility/*`.
+Utopia exposes a **Firefly III-compatible REST API** over Axum. The contract source of truth is `openapi.yaml` (OpenAPI 3.0.3, ~1500 lines) and `src/api/router.rs` (18 routes: 16 business routes + `/metrics` + `/api/v1/accounts/{id}/transactions`). All business routes are under `/api/v1/*` and require `Authorization: Bearer <token>` except `POST /api/v1/bootstrap/tokens` (uses `X-Bootstrap-Key`) and `GET /metrics` (no auth). Responses use Firefly envelope/pagination/error shapes from `src/core/compatibility/*`.
 
 Base URL: `http://localhost:{port}` (default 8080, configurable via `APP_PORT`). Security: `bearerAuth` (HTTP bearer).
 
 ## External REST API (Axum Router — `src/api/router.rs`)
 
-### Route Table (16 routes + /metrics)
+### Route Table (18 routes: 16 business + `/metrics` + account-scoped transactions)
 
 | # | Method | Path | Handler | Auth | Description |
 |---|---|---|---|---|---|

@@ -1,5 +1,7 @@
 # Component Inventory — Utopia
 
+> **Snapshot note:** This inventory reflects the repository state at commit `f92e948e` (2026-08-29, see `reverse-engineering-timestamp.md`). Component counts, route numbers, and dependency graphs describe that snapshot — re-validate before acting.
+
 ## Overview
 Complete inventory of logical components (code ownership boundaries) in the Utopia Rust monolith. Each component owns its files, responsibilities, and public surface. Dependencies are in-process calls via `AppState` / traits.
 
@@ -15,7 +17,7 @@ Complete inventory of logical components (code ownership boundaries) in the Utop
 ### 2. API Router (`src/api/router.rs`)
 - **Responsibility:** Route table (16 business routes + /metrics), middleware layering, `AppState` injection via `Arc`.
 - **Key files:** `src/api/router.rs`
-- **Public surface:** `build_router(state: Arc<AppState>) -> Router`
+- **Public surface:** `build_router(state: Arc<AppState>) -> Router` (18 routes: 16 business + `/metrics` + `/api/v1/accounts/{id}/transactions`)
 - **Dependencies:** `api/handlers/*`, `api/middleware/*`, `core/auth/middleware`, `core/auth/metrics`
 - **Dependents:** `app.rs`
 
@@ -104,7 +106,7 @@ Complete inventory of logical components (code ownership boundaries) in the Utop
 - **Dependents:** `api/handlers/metadata`
 
 ### 15. Modules — Budgets (`src/modules/budgets.rs`)
-- **Responsibility:** Placeholder for future budgets domain (UOW-04). No logic, no routes, no tables.
+- **Responsibility:** Placeholder for future budgets domain. No logic, no routes, no tables. Note: "UOW-04" reference in source is an unverified internal tag — treat as unimplemented surface (FR1 "Not Implemented"), not a tracked work item.
 - **Key files:** `src/modules/budgets.rs` (single comment)
 - **Public surface:** None
 - **Dependencies:** None

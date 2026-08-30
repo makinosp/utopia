@@ -65,9 +65,9 @@ utopia/
 │   ├── transactions_api_test.rs
 │   ├── auth_integration_test.rs
 │   ├── db_integration_test.rs
-│   ├── core_tests.rs
+│   ├── core_tests.rs          # entry point: pulls in `tests/core/support.rs`
 │   └── core/
-│       ├── support.rs
+│       ├── support.rs          # shared helpers + `mod` declarations for each test module
 │       ├── accounts_query_test.rs
 │       ├── auth_validator_test.rs
 │       ├── decimal_serialization_test.rs
@@ -89,10 +89,12 @@ utopia/
 └── aidlc/                      # AI-DLC workspace (out of scope for app)
 ```
 
+> **Snapshot note:** This document reflects the repository state at the reverse-engineering snapshot (`reverse-engineering-timestamp.md`: commit `f92e948e`, 2026-08-29). Route counts, file lists, and dependency graphs describe that snapshot — re-validate against the live tree before relying on them.
+
 ## Package / Crate Organization
 | Package | Type | Language | Purpose |
 |---|---|---|---|
-| `utopia` (root `Cargo.toml`) | binary crate | Rust | Entire API server — single crate, no workspace members for Rust |
+| `utopia` (root `Cargo.toml`) | binary crate | Rust | Entire API server — single crate, no workspace members for Rust; router defines 18 routes (16 business + `/metrics` + `/api/v1/accounts/{id}/transactions`) |
 | `scripts/seed` (`pnpm-workspace.yaml`) | workspace package | TypeScript | DB seed helpers (not part of runtime) |
 
 The Rust crate is **not** a Cargo workspace — all Rust code lives in one crate with `src/` modules. `pnpm-workspace.yaml` only groups JS tooling (`oxfmt`, `oxlint`) and `scripts/seed`.
@@ -102,7 +104,7 @@ The Rust crate is **not** a Cargo workspace — all Rust code lives in one crate
 | Module | Classification | Responsibility |
 |---|---|---|
 | `src/main.rs`, `src/app.rs`, `src/config.rs` | Bootstrap / Infra | Env config, pool/cache/metrics wiring, `AppState`, server startup |
-| `src/api/router.rs` | API boundary | Route table (16 routes), middleware layering, `AppState` injection |
+| `src/api/router.rs` | API boundary | Route table (18 routes: 16 business + `/metrics` + account-scoped transactions), middleware layering, `AppState` injection |
 | `src/api/handlers/*` | API boundary | HTTP handlers: parse request, call service, shape Firefly envelope, map errors |
 | `src/api/middleware/*` | Cross-cutting | Accept negotiation, rate limiting (bootstrap only), request ID, security headers |
 | `src/core/auth/*` | Core / Security | Token lifecycle, validation, caching, audit, metrics |

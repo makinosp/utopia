@@ -1,5 +1,7 @@
 # Dependencies — Utopia
 
+> **Snapshot note:** Dependency versions and usage reflect the reverse-engineering snapshot (`f92e948e`, 2026-08-29). Re-check `Cargo.toml` / `package.json` for current versions before acting on upgrade recommendations.
+
 ## External Dependencies (Cargo — `Cargo.toml`)
 
 ### Runtime
