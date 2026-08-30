@@ -20,7 +20,7 @@ export default defineConfig({
       },
     },
     {
-      files: ['**/*.md'],
+      files: ['**/*.md', '**/*.just', '**/justfile'],
       options: {
         tabWidth: 4,
       },
