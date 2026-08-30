@@ -7,59 +7,51 @@
 
 ## Way of Working
 
-### Question Format (Migrated from v1 `.aidlc-rule-details/common/`)
-
-All questions must use structured question files — never ask in chat.
-
-- File naming: `{phase-name}-questions.md`
-- Every question: clear text + meaningful options + mandatory "Other (please describe…)" as last option
-- Options separated by blank lines (CommonMark rendering)
-- Answer via `[Answer]: <letter>` tag
-- Workflow: create file → inform user → wait for confirmation → read & extract → proceed
-- If answer missing or invalid: ask user to fix before proceeding
-- Minimum 2 meaningful options + Other; maximum 5 + Other
-- Options must be mutually exclusive, cover common scenarios, realistic, specific
+We work on short-lived `feature/*` branches and merge into `main` through pull
+requests reviewed on GitHub. `main` is the single long-lived trunk; releases
+happen from trunk, not from long-lived release branches. CI runs automatically
+on every PR and on every push to `main`, so a branch is expected to be
+green before it is merged.
 
 ## Walking Skeleton
 
-<!-- Affirmed during practices-discovery. Example: -->
-<!-- We don't run a walking skeleton — our deployment pipeline is mature -->
-<!-- and the slice cost outweighs the value at our maturity stage. -->
+We do not run a walking-skeleton ceremony for this project. The deployment
+pipeline (Docker + docker-compose + Caddy) is already mature and the service
+boots end-to-end against Postgres today, so the cost of a thin first slice
+outweighs its value at our current maturity. New features land as ordinary PRs
+into the existing running system.
 
 ## Testing Posture
 
-<!-- Affirmed during practices-discovery. Example: -->
-<!-- We use BDD. Specifications drive scenarios; scenarios drive code. -->
-<!-- Each Unit ships with feature files in /features/. -->
+- **Methodology**: test-after
+- **Ordering**: implement each applicable testable layer, then write and run that layer's tests.
+
+The `classic` scope adds an 80% line-coverage floor, **enforced now** via a Rust
+coverage tool (e.g. cargo-llvm-cov) wired into CI as a gate. Today the Rust side
+uses `cargo test` (unit + integration via testcontainers) and the API surface is
+verified with k6 compatibility scripts in CI Phase 2. The JS/TS tooling
+(oxlint, oxfmt) is lint/format only — there is no JS unit-test framework
+configured yet.
 
 ## Deployment
 
-<!-- Affirmed during practices-discovery. -->
+We deploy on merge to staging environments. Production deploys gate on a
+separate manual approval — tech lead + product owner sign-off. The application
+ships as a Rust binary in a Docker image, orchestrated by docker-compose behind
+a Caddy reverse proxy, with Postgres as the datastore. Database migrations live
+in `migrations/` and run forward-only.
+
+**Production rollout strategy (placeholder):** no production deployment target
+exists yet, so the concrete rollout method (recreate / blue-green / canary) is
+undecided and recorded as a placeholder until a target environment is stood up.
 
 ## Code Style
 
-<!-- Team-specific conventions beyond the linter. Example: -->
-<!-- - Prefer named exports over default exports -->
-<!-- - All async functions return Result<T, E>, never throw -->
-
-### ASCII Diagram Standards (Migrated from v1 `.aidlc-rule-details/common/`)
-
-- **Basic ASCII only** for diagrams: `+` `-` `|` `^` `v` `<` `>` and alphanumeric text
-- **NO Unicode box-drawing** (`┌ ─ │ └ ┐ ┘ ├ ┤ ┬ ┴ ┼ ▼ ▲ ► ◄`)
-- **Every line in a box MUST have EXACTLY the same character count** (including spaces)
-- Corners use `+`; use spaces (not tabs) for alignment
-- For complex diagrams, prefer Mermaid
-
-### Content Validation (Migrated from v1 `.aidlc-rule-details/common/`)
-
-Before writing any file with diagrams or code blocks:
-
-- Validate embedded code blocks (Mermaid, JSON, YAML)
-- Check special character escaping (`"` → `\"`, `'` → `\'`)
-- Verify markdown syntax correctness
-- Include text fallback for any Mermaid diagram
-- On validation failure: log error → use fallback → continue workflow → inform user
-
+We defer to project-level configurations:
+- Rust: `cargo fmt` (format) and `cargo clippy -- -D warnings` (lint), enforced in CI Phase 1.
+- JS/TS: `oxfmt` (format) and `oxlint` (lint), configured in `oxlint.config.ts` / `oxfmt.config.ts` at repo root, run in CI before merge; failure blocks the PR.
+- Naming: language idiomatic (snake_case for Rust, camelCase for JS/TS). No project-wide rename rules beyond the linter.
+- **Security scanning**: `cargo-audit` is promoted from advisory to a **blocking** gate in CI, and a secret-scanning step (e.g. gitleaks) runs pre-merge.
 ## Forbidden
 
 <!-- Team-specific forbidden patterns -->

@@ -58,6 +58,8 @@
 <!-- Format: ALWAYS [behavior] (affirmed [date]) -->
 <!-- Example: ALWAYS use Result<T,E> for fallible operations in service layer (affirmed 2026-05-17) -->
 
+- ALWAYS run `cargo-audit` as a **blocking** gate in CI — a known-vulnerable Rust dependency must not be merged. (affirmed 2026-08-30)
+- ALWAYS run a secret-scanning step (e.g. gitleaks) pre-merge so committed secrets are caught before they reach `main`. (affirmed 2026-08-30)
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
