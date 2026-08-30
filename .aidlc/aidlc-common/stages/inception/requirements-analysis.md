@@ -48,6 +48,7 @@ scopes:
   - classic
   - workshop
   - express
+  - firefly-compat-inventory
 inputs: RE artifacts (if brownfield), authoritative project description (project-description utility)
 outputs: requirements.md, requirements-analysis-questions.md (under this stage's record dir, engine-resolved)
 ---

@@ -34,6 +34,7 @@ scopes:
   - classic
   - workshop
   - express
+  - firefly-compat-inventory
 inputs: <record>/aidlc-state.md
 outputs: "aidlc/spaces/<active-space>/codekb/<repo>/ (9 artifacts: business-overview.md, architecture.md, code-structure.md, api-documentation.md, component-inventory.md, technology-stack.md, dependencies.md, code-quality-assessment.md, reverse-engineering-timestamp.md)"
 ---
