@@ -5,6 +5,8 @@
 ## Overview
 Complete inventory of logical components (code ownership boundaries) in the Utopia Rust monolith. Each component owns its files, responsibilities, and public surface. Dependencies are in-process calls via `AppState` / traits.
 
+> **Note:** Component numbers (1-17) are independent of route counts (18 routes). Component 16 is "Migrations"; the "16 business routes" refers to the API surface, not this component number.
+
 ## Components
 
 ### 1. Bootstrap / Config (`src/main.rs`, `src/config.rs`, `src/app.rs`)
@@ -15,7 +17,7 @@ Complete inventory of logical components (code ownership boundaries) in the Utop
 - **Dependents:** None (root)
 
 ### 2. API Router (`src/api/router.rs`)
-- **Responsibility:** Route table (16 business routes + /metrics), middleware layering, `AppState` injection via `Arc`.
+- **Responsibility:** Route table (18 routes: 16 business + `/metrics` + `/api/v1/accounts/{id}/transactions`), middleware layering, `AppState` injection via `Arc`.
 - **Key files:** `src/api/router.rs`
 - **Public surface:** `build_router(state: Arc<AppState>) -> Router` (18 routes: 16 business + `/metrics` + `/api/v1/accounts/{id}/transactions`)
 - **Dependencies:** `api/handlers/*`, `api/middleware/*`, `core/auth/middleware`, `core/auth/metrics`
@@ -127,6 +129,8 @@ Complete inventory of logical components (code ownership boundaries) in the Utop
 - **Dependents:** `app.rs`, `core/auth`
 
 ## Dependency Graph (simplified)
+
+> **Note:** This graph is a high-level simplification. Detailed per-component dependencies (e.g., `api/handlers/accounts` depends on `modules/transactions` for account-scoped listings; `core/auth` depends on `core/persistence` repos) are listed in each component's `Dependencies` / `Dependents` fields above. See `architecture.md` for the full interaction diagrams (sequence diagrams for list accounts, create transaction, bootstrap token, and error mapping flow).
 
 ```
 Bootstrap/Config → API Router → Handlers → Modules → Persistence → Postgres
