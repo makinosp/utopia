@@ -4,7 +4,8 @@
 
 - Date: 2026-08-29
 - Commit: f92e948e0c19a62ab2c1f9b43bcd85d91620d895
-- Intent: 260829-firefly-compat-inventory — Firefly III互換APIの現状を棚卸しして、実装済み仕様と本家との差分、今後の優先順位を整理したい。
+- Intent: 260829-firefly-compat-inventory — Take inventory of the current state of the Firefly III compatible API, organize the differences between the implemented specifications and the original, and prioritize what comes next.
+
 - Scope: firefly-compat-inventory (Minimal depth)
 - Project type: Brownfield, Rust + pnpm, repo "utopia"
 - Snapshot: paths=["./"], store_generation=none, source_fingerprint=git:f92e948e0c19a62ab2c1f9b43bcd85d91620d895
