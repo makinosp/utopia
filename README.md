@@ -1,7 +1,11 @@
 # Utopia
 
-Utopia is a lightweight, self-hostable personal finance API with partial
+Lightweight, self-hostable personal finance API with partial
 compatibility with Firefly-III.
+
+<p align="center">
+  <img src="./docs/images/logo.png" alt="logo" width="600">
+</p>
 
 ## Overview
 
