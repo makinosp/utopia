@@ -1,7 +1,7 @@
 # AI-DLC State Tracking
 
 ## Project Information
-- **Project**: 新規機能を追加したい。firefly-compat-inventory スコープの成果物をもとに、追加する機能を検討しましょう。
+- **Project**: Let's consider adding new features based on the artifacts from the firefly-compat-inventory scope.
 - **Project Description Source**: project-description.json
 - **Project Type**: Brownfield
 - **Scope**: classic
