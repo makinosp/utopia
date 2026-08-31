@@ -15,6 +15,10 @@
     "/^ls(\\b.*)?$/": {
       "approve": true,
       "matchCommandLine": true
+    },
+    "/^bun \\.aidlc/(\\b.*)?$/": {
+      "approve": true,
+      "matchCommandLine": true
     }
   },
   "chat.tools.terminal.blockDetectedFileWrites": "outsideWorkspace"
