@@ -1,9 +1,8 @@
-# Team-Level Rules
+# Team Practices
 
-> This team's affirmed practices and corrections. Loaded after `org.md` as
-> strict-additive guidance; contradictions with broader policy are rejected.
-> Populated by the practices-discovery affirmation gate. Edit at the gate,
-> not directly.
+> Drafted by the release engineer (lead) for Practices Discovery. Reflects
+> evidence from the existing workspace configuration, CI/CD pipelines, and git
+> history, finalized after the consolidated-summary confirmation.
 
 ## Way of Working
 
@@ -52,22 +51,3 @@ We defer to project-level configurations:
 - JS/TS: `oxfmt` (format) and `oxlint` (lint), configured in `oxlint.config.ts` / `oxfmt.config.ts` at repo root, run in CI before merge; failure blocks the PR.
 - Naming: language idiomatic (snake_case for Rust, camelCase for JS/TS). No project-wide rename rules beyond the linter.
 - **Security scanning**: `cargo-audit` is promoted from advisory to a **blocking** gate in CI, and a secret-scanning step (e.g. gitleaks) runs pre-merge.
-## Forbidden
-
-<!-- Team-specific forbidden patterns -->
-
-## Mandated
-
-### Overconfidence Prevention (Migrated from v1 `.aidlc-rule-details/common/`)
-
-**Default to asking** — when there's any ambiguity, ask clarifying questions.
-
-- Evaluate ALL question categories; don't skip entire areas
-- Analyze ALL user responses for ambiguities (vague words: "depends", "maybe", "not sure", "mix of")
-- Create follow-up questions for ANY unclear responses; don't proceed until resolved
-- Red flags: stages completing with zero questions on complex projects; proceeding with vague answers
-- Better to over-clarify than under-clarify
-
-## Corrections
-
-<!-- Self-learning loop appends here. -->
